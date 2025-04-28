@@ -24,7 +24,7 @@ This Turborepo includes the following packages/apps:
 
 Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
 
-### Utilities
+###utilities
 
 This Turborepo has some additional tools already setup for you:
 
@@ -32,7 +32,7 @@ This Turborepo has some additional tools already setup for you:
 - [ESLint](https://eslint.org/) for code linting
 - [Prettier](https://prettier.io) for code formatting
 
-### Build
+###build
 
 To build all apps and packages, run the following command:
 
