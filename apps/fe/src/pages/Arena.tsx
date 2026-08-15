@@ -612,7 +612,6 @@ export const Arena = () => {
 
   const handleWebSocketMessage = useCallback(
     async (message: any) => {
-      const currentTime = Date.now();
       switch (message.type) {
         case "space-joined":
           const initialGridX = message.payload.spawn.x;
@@ -786,26 +785,6 @@ export const Arena = () => {
     };
   }, [handleWebSocketMessage]);
 
-  const handleMove = (newGridX: number, newGridY: number) => {
-    if (!currentUser || !wsRef.current) return;
-    const currentTime = Date.now();
-    currentUserAnimationRef.current = {
-      isMoving: true,
-      startX: currentUserAnimationRef.current.visualX || currentUser.gridX * 50,
-      startY: currentUserAnimationRef.current.visualY || currentUser.gridY * 50,
-      targetX: newGridX * 50,
-      targetY: newGridY * 50,
-      moveStartTime: currentTime,
-      visualX: currentUserAnimationRef.current.visualX,
-      visualY: currentUserAnimationRef.current.visualY,
-    };
-    wsRef.current.send(
-      JSON.stringify({
-        type: "move",
-        payload: { x: newGridX, y: newGridY, userId: currentUser.userId },
-      }),
-    );
-  };
 
   const sendPrivateMessage = (recipient: string, message: string) => {
     if (!message.trim() || !wsRef.current) return;
@@ -1014,82 +993,83 @@ export const Arena = () => {
         ctx.stroke();
       }
 
+      // --- Draw Procedural Animated Limbs ---
+      const drawLimbs = (x: number, y: number, state: any) => {
+        ctx.save();
+        ctx.translate(x, y);
+        
+        const limbSwing = state.moving ? Math.sin(state.walkCycle) * 15 : 0;
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 6;
+        ctx.lineCap = "round";
+
+        // Legs
+        ctx.beginPath();
+        ctx.moveTo(-10, AVATAR_SIZE/2 - 5);
+        ctx.lineTo(-10 + limbSwing, AVATAR_SIZE/2 + 15);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(10, AVATAR_SIZE/2 - 5);
+        ctx.lineTo(10 - limbSwing, AVATAR_SIZE/2 + 15);
+        ctx.stroke();
+
+        // Arms
+        ctx.beginPath();
+        ctx.moveTo(-AVATAR_SIZE/2 + 5, 0);
+        ctx.lineTo(-AVATAR_SIZE/2 - 5 - limbSwing, 15);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(AVATAR_SIZE/2 - 5, 0);
+        ctx.lineTo(AVATAR_SIZE/2 + 5 + limbSwing, 15);
+        ctx.stroke();
+
+        ctx.restore();
+      };
+
+      const drawCharacter = (x: number, y: number, img: any, isMe: boolean, state: any) => {
+        // Bobbing effect for the body
+        const bob = state.moving ? Math.abs(Math.sin(state.walkCycle)) * 5 : 0;
+        const bodyY = y - bob;
+        
+        drawLimbs(x, bodyY, state);
+
+        // Draw Body/Head
+        ctx.save();
+        if (isMe) {
+          ctx.globalCompositeOperation = "lighter";
+          const hologramGradient = ctx.createRadialGradient(x, bodyY, 0, x, bodyY, AVATAR_SIZE * 1.5);
+          hologramGradient.addColorStop(0, "hsla(210, 100%, 50%, 0.4)");
+          hologramGradient.addColorStop(1, "hsla(180, 100%, 50%, 0)");
+          ctx.fillStyle = hologramGradient;
+          ctx.beginPath();
+          ctx.arc(x, bodyY, AVATAR_SIZE + 5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalCompositeOperation = "source-over";
+        }
+
+        ctx.beginPath();
+        ctx.arc(x, bodyY, AVATAR_SIZE / 2, 0, Math.PI * 2);
+        ctx.clip();
+        
+        // Flip character based on direction
+        if (state.direction === 'left') {
+           ctx.translate(x, bodyY);
+           ctx.scale(-1, 1);
+           ctx.translate(-x, -bodyY);
+        }
+
+        if (img) ctx.drawImage(img, x - AVATAR_SIZE / 2, bodyY - AVATAR_SIZE / 2, AVATAR_SIZE, AVATAR_SIZE);
+        ctx.restore();
+      };
+
       // Draw Main User
       if (currentUser.gridX !== undefined) {
         const avatar = avatars.get(currentUser.userId);
         const image = avatar
           ? loadedImages.get(avatar)
           : defaultAvatarRef.current;
-        // --- Draw Procedural Animated Limbs ---
-        const drawLimbs = (x: number, y: number, state: any) => {
-          ctx.save();
-          ctx.translate(x, y);
-          
-          const limbSwing = state.moving ? Math.sin(state.walkCycle) * 15 : 0;
-          ctx.strokeStyle = "#ffffff";
-          ctx.lineWidth = 6;
-          ctx.lineCap = "round";
-
-          // Legs
-          ctx.beginPath();
-          ctx.moveTo(-10, AVATAR_SIZE/2 - 5);
-          ctx.lineTo(-10 + limbSwing, AVATAR_SIZE/2 + 15);
-          ctx.stroke();
-
-          ctx.beginPath();
-          ctx.moveTo(10, AVATAR_SIZE/2 - 5);
-          ctx.lineTo(10 - limbSwing, AVATAR_SIZE/2 + 15);
-          ctx.stroke();
-
-          // Arms
-          ctx.beginPath();
-          ctx.moveTo(-AVATAR_SIZE/2 + 5, 0);
-          ctx.lineTo(-AVATAR_SIZE/2 - 5 - limbSwing, 15);
-          ctx.stroke();
-
-          ctx.beginPath();
-          ctx.moveTo(AVATAR_SIZE/2 - 5, 0);
-          ctx.lineTo(AVATAR_SIZE/2 + 5 + limbSwing, 15);
-          ctx.stroke();
-
-          ctx.restore();
-        };
-
-        const drawCharacter = (x: number, y: number, img: any, isMe: boolean, state: any) => {
-          // Bobbing effect for the body
-          const bob = state.moving ? Math.abs(Math.sin(state.walkCycle)) * 5 : 0;
-          const bodyY = y - bob;
-          
-          drawLimbs(x, bodyY, state);
-
-          // Draw Body/Head
-          ctx.save();
-          if (isMe) {
-            ctx.globalCompositeOperation = "lighter";
-            const hologramGradient = ctx.createRadialGradient(x, bodyY, 0, x, bodyY, AVATAR_SIZE * 1.5);
-            hologramGradient.addColorStop(0, "hsla(210, 100%, 50%, 0.4)");
-            hologramGradient.addColorStop(1, "hsla(180, 100%, 50%, 0)");
-            ctx.fillStyle = hologramGradient;
-            ctx.beginPath();
-            ctx.arc(x, bodyY, AVATAR_SIZE + 5, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.globalCompositeOperation = "source-over";
-          }
-
-          ctx.beginPath();
-          ctx.arc(x, bodyY, AVATAR_SIZE / 2, 0, Math.PI * 2);
-          ctx.clip();
-          
-          // Flip character based on direction
-          if (state.direction === 'left') {
-             ctx.translate(x, bodyY);
-             ctx.scale(-1, 1);
-             ctx.translate(-x, -bodyY);
-          }
-
-          if (img) ctx.drawImage(img, x - AVATAR_SIZE / 2, bodyY - AVATAR_SIZE / 2, AVATAR_SIZE, AVATAR_SIZE);
-          ctx.restore();
-        };
 
         const myState = userAnimState.current.get(currentUser.userId);
         drawCharacter(currentVisualX, currentVisualY, image, true, myState);
