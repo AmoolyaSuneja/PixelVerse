@@ -4,7 +4,7 @@ import { spaceRouter } from "./space";
 import { adminRouter } from "./admin";
 import { SigninSchema, SignupSchema } from "../../types";
 import client from "@repo/db/src/index";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import sanitizedConfig from "../../utils/config";
 export const router = Router();
