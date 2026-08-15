@@ -72,7 +72,7 @@ spaceRouter.delete(
   async (req: Request, res: Response) => {
     const space = await client.space.findUnique({
       where: {
-        id: req.params.spaceId,
+        id: req.params.spaceId as string,
       },
       select: {
         creatorId: true,
@@ -88,7 +88,7 @@ spaceRouter.delete(
     }
     await client.space.delete({
       where: {
-        id: req.params.spaceId,
+        id: req.params.spaceId as string,
       },
     });
     res.json({ message: "Space deleted" });
@@ -188,7 +188,7 @@ spaceRouter.get(
   async (req: Request, res: Response) => {
     const space = await client.space.findUnique({
       where: {
-        id: req.params.spaceId,
+        id: req.params.spaceId as string,
       },
       include: {
         elements: {
@@ -239,7 +239,7 @@ spaceRouter.post(
   "/:spaceId/unban",
   userMiddleware,
   async (req: Request, res: Response) => {
-    const spaceId = req.params.spaceId;
+    const spaceId = req.params.spaceId as string;
     const userIdToUnban = req.body.userId;
     if (!userIdToUnban) {
       res.status(400).json({ message: "User ID is required" });

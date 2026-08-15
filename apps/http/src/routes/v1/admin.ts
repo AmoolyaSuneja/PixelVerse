@@ -40,7 +40,7 @@ adminRouter.put(
     }
     await client.element.update({
       where: {
-        id: req.params.elementId,
+        id: req.params.elementId as string,
       },
       data: {
         imageUrl: parseData.data.imageUrl,
