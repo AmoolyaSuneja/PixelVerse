@@ -61,21 +61,21 @@ export const drawProceduralCharacter = (
   ctx.lineWidth = size * 0.25;
   ctx.lineCap = "round";
   
-  // Calculate swing directions based on facing direction
-  const isVertical = direction === "up" || direction === "down";
-  const swingX = isVertical ? 0 : limbSwing;
-  const swingY = isVertical ? limbSwing * 0.5 : 0; // Vertical swing is subtle (Y axis)
+  // Since the character is drawn front-facing, limbs should ONLY swing in the Y-axis (up and down)
+  // to simulate stepping forward and backward, regardless of walking direction.
+  // We use limbSwing to alternate the left/right pairs.
+  const step = limbSwing * 0.5;
 
   // Left Leg
   ctx.beginPath();
   ctx.moveTo(-size * 0.2, bodyY + size * 0.2);
-  ctx.lineTo(-size * 0.2 + swingX, bodyY + size * 0.6 + swingY);
+  ctx.lineTo(-size * 0.2, bodyY + size * 0.6 + step);
   ctx.stroke();
 
   // Right Leg
   ctx.beginPath();
   ctx.moveTo(size * 0.2, bodyY + size * 0.2);
-  ctx.lineTo(size * 0.2 - swingX, bodyY + size * 0.6 - swingY);
+  ctx.lineTo(size * 0.2, bodyY + size * 0.6 - step);
   ctx.stroke();
 
   // Draw Torso (Anime Chibi style: small body, big head)
@@ -92,16 +92,18 @@ export const drawProceduralCharacter = (
   ctx.strokeStyle = palette.shirt;
   ctx.lineWidth = size * 0.15;
   
-  // Left Arm (Swings opposite to Left Leg)
+  // Left Arm (Swings backward when Left Leg swings forward)
+  // Left Leg = +step, so Left Arm = -step
   ctx.beginPath();
   ctx.moveTo(-torsoWidth / 2 - size * 0.05, bodyY - size * 0.1);
-  ctx.lineTo(-torsoWidth / 2 - size * 0.05 - swingX, bodyY + size * 0.25 - swingY);
+  ctx.lineTo(-torsoWidth / 2 - size * 0.1, bodyY + size * 0.25 - step);
   ctx.stroke();
 
-  // Right Arm (Swings opposite to Right Leg)
+  // Right Arm (Swings forward when Right Leg swings backward)
+  // Right Leg = -step, so Right Arm = +step
   ctx.beginPath();
   ctx.moveTo(torsoWidth / 2 + size * 0.05, bodyY - size * 0.1);
-  ctx.lineTo(torsoWidth / 2 + size * 0.05 + swingX, bodyY + size * 0.25 + swingY);
+  ctx.lineTo(torsoWidth / 2 + size * 0.1, bodyY + size * 0.25 + step);
   ctx.stroke();
 
   // Draw Head (Chibi - very large head)
