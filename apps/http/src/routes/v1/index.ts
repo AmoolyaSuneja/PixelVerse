@@ -29,10 +29,10 @@ router.post("/signup", async (req: Request, res: Response) => {
     res.json({
       userId: user.id,
     });
-  } catch (e) {
-    console.log(e);
+  } catch (e: any) {
+    console.log("SIGNUP ERROR:", e);
     res.status(400).json({
-      message: "User already exists",
+      message: e?.message || "User already exists",
     });
   }
 });
