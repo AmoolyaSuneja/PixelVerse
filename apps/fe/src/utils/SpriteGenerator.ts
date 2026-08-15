@@ -49,7 +49,7 @@ export const drawProceduralCharacter = (
 
   // Fluid walking animation mechanics
   const isMoving = walkCycle > 0;
-  const speed = 0.2; // Smooth out the animation speed
+  const speed = 1.0; // Fast, real-time animation speed
   const bob = isMoving ? Math.abs(Math.sin(walkCycle * speed)) * 4 : 0;
   const limbSwing = isMoving ? Math.sin(walkCycle * speed) * (size * 0.4) : 0;
   const headTilt = isMoving ? Math.sin(walkCycle * speed * 0.5) * 0.08 : 0;
