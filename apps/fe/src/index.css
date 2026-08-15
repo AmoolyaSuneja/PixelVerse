@@ -1,1 +1,10 @@
 @import "tailwindcss";
+
+@keyframes play-sprite {
+  from { background-position: 0% 0%; }
+  to { background-position: 100% 0%; }
+}
+
+.sprite-animate {
+  animation: play-sprite 0.6s steps(5) infinite;
+}

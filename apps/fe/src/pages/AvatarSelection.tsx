@@ -75,44 +75,74 @@ export default function AvatarSelection() {
         </h1>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
-          {avatars.map((avatar) => (
-            <div
-              key={avatar.id}
-              onClick={() => setSelectedAvatar(avatar.id)}
-              className={`relative cursor-pointer transform transition-all duration-300 hover:scale-105 ${
-                selectedAvatar === avatar.id ? "ring-4 ring-purple-400" : ""
-              } rounded-2xl overflow-hidden aspect-square bg-black/20 flex items-center justify-center`}
-            >
-              <img
-                src={avatar.imageUrl.startsWith("procedural:") ? generateProceduralDataURL(avatar.imageUrl) : avatar.imageUrl}
-                alt={avatar.name}
-                className="w-full h-full object-contain p-4 image-rendering-pixelated"
-                style={{ imageRendering: "pixelated" }}
-              />
-              <div className="absolute bottom-0 w-full text-center bg-black/50 text-white text-xs py-1 font-bold">
-                {avatar.name}
-              </div>
-              {selectedAvatar === avatar.id && (
-                <div className="absolute inset-0 bg-purple-500 bg-opacity-30 flex items-center justify-center">
-                  <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
-                    <svg
-                      className="w-8 h-8 text-purple-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
+          {avatars.map((avatar) => {
+            const isProcedural = avatar.imageUrl.startsWith("procedural:");
+            const isFemale = avatar.imageUrl.includes("female");
+            const spriteUrl = isFemale ? "/anime_female.png" : "/anime_male.png";
+            
+            // Replicate the hue shift logic from SpriteRenderer.ts
+            const idPart = avatar.imageUrl.split(":")[1] || "male_1";
+            let hueShift = 0;
+            if (idPart.includes("_2")) hueShift = 60;
+            if (idPart.includes("_3")) hueShift = 120;
+            if (idPart.includes("_4")) hueShift = 180;
+            if (idPart.includes("_5")) hueShift = 240;
+
+            return (
+              <div
+                key={avatar.id}
+                onClick={() => setSelectedAvatar(avatar.id)}
+                className={`relative cursor-pointer transform transition-all duration-300 hover:scale-105 ${
+                  selectedAvatar === avatar.id ? "ring-4 ring-purple-400" : ""
+                } rounded-2xl overflow-hidden aspect-square bg-black/20 flex items-center justify-center`}
+              >
+                {isProcedural ? (
+                  <div className="w-32 h-32 overflow-hidden flex items-center justify-center">
+                    <div
+                      className="image-rendering-pixelated sprite-animate"
+                      style={{
+                        backgroundImage: `url('${spriteUrl}')`,
+                        backgroundSize: '500% 400%',
+                        filter: `hue-rotate(${hueShift}deg)`,
+                        width: '80%',
+                        height: '80%',
+                        backgroundRepeat: 'no-repeat'
+                      }}
+                    />
                   </div>
+                ) : (
+                  <img
+                    src={avatar.imageUrl}
+                    alt={avatar.name}
+                    className="w-full h-full object-contain p-4"
+                  />
+                )}
+                
+                <div className="absolute bottom-0 w-full text-center bg-black/50 text-white text-xs py-1 font-bold">
+                  {avatar.name}
                 </div>
-              )}
-            </div>
-          ))}
+                {selectedAvatar === avatar.id && (
+                  <div className="absolute inset-0 bg-purple-500 bg-opacity-30 flex items-center justify-center">
+                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
+                      <svg
+                        className="w-8 h-8 text-purple-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         <div className="flex justify-center">
