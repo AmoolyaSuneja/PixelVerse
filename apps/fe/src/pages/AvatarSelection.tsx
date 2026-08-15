@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import axios from "axios";
 import { BeatLoader } from "react-spinners";
+import { generateProceduralDataURL } from "../utils/SpriteGenerator";
 
 interface Avatar {
   id: string;
@@ -83,10 +84,14 @@ export default function AvatarSelection() {
               } rounded-2xl overflow-hidden aspect-square`}
             >
               <img
-                src={avatar.imageUrl}
+                src={avatar.imageUrl.startsWith("procedural:") ? generateProceduralDataURL(avatar.imageUrl) : avatar.imageUrl}
                 alt={avatar.name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain p-4 image-rendering-pixelated"
+                style={{ imageRendering: "pixelated" }}
               />
+              <div className="absolute bottom-0 w-full text-center bg-black/50 text-white text-xs py-1 font-bold">
+                {avatar.name}
+              </div>
               {selectedAvatar === avatar.id && (
                 <div className="absolute inset-0 bg-purple-500 bg-opacity-30 flex items-center justify-center">
                   <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">

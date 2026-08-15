@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Avatar, Space, Element, MapElement } from "../types";
+import { drawProceduralCharacter } from "../utils/SpriteGenerator";
 import { useAvatar } from "../contexts/AvatarsContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -993,86 +995,36 @@ export const Arena = () => {
         ctx.stroke();
       }
 
-      // --- Draw Procedural Animated Limbs ---
-      const drawLimbs = (x: number, y: number, state: any) => {
-        ctx.save();
-        ctx.translate(x, y);
+      // Draw Main User
+      if (currentUser.gridX !== undefined) {
+        const avatarStr = avatars.get(currentUser.userId);
+        const image = avatarStr && !avatarStr.startsWith("procedural:")
+          ? loadedImages.get(avatarStr)
+          : defaultAvatarRef.current;
         
-        const limbSwing = state.moving ? Math.sin(state.walkCycle) * 15 : 0;
-        ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 6;
-        ctx.lineCap = "round";
+        const myState = userAnimState.current.get(currentUser.userId);
 
-        // Legs
-        ctx.beginPath();
-        ctx.moveTo(-10, AVATAR_SIZE/2 - 5);
-        ctx.lineTo(-10 + limbSwing, AVATAR_SIZE/2 + 15);
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(10, AVATAR_SIZE/2 - 5);
-        ctx.lineTo(10 - limbSwing, AVATAR_SIZE/2 + 15);
-        ctx.stroke();
-
-        // Arms
-        ctx.beginPath();
-        ctx.moveTo(-AVATAR_SIZE/2 + 5, 0);
-        ctx.lineTo(-AVATAR_SIZE/2 - 5 - limbSwing, 15);
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(AVATAR_SIZE/2 - 5, 0);
-        ctx.lineTo(AVATAR_SIZE/2 + 5 + limbSwing, 15);
-        ctx.stroke();
-
-        ctx.restore();
-      };
-
-      const drawCharacter = (x: number, y: number, img: any, isMe: boolean, state: any) => {
-        // Bobbing effect for the body
-        const bob = state.moving ? Math.abs(Math.sin(state.walkCycle)) * 5 : 0;
-        const bodyY = y - bob;
-        
-        drawLimbs(x, bodyY, state);
-
-        // Draw Body/Head
-        ctx.save();
-        if (isMe) {
+        if (avatarStr && avatarStr.startsWith("procedural:")) {
+          drawProceduralCharacter(ctx, currentVisualX, currentVisualY, avatarStr, AVATAR_SIZE, myState.walkCycle, myState.direction);
+        } else {
+          // Fallback to DiceBear images if still used
+          ctx.save();
           ctx.globalCompositeOperation = "lighter";
-          const hologramGradient = ctx.createRadialGradient(x, bodyY, 0, x, bodyY, AVATAR_SIZE * 1.5);
+          const hologramGradient = ctx.createRadialGradient(currentVisualX, currentVisualY, 0, currentVisualX, currentVisualY, AVATAR_SIZE * 1.5);
           hologramGradient.addColorStop(0, "hsla(210, 100%, 50%, 0.4)");
           hologramGradient.addColorStop(1, "hsla(180, 100%, 50%, 0)");
           ctx.fillStyle = hologramGradient;
           ctx.beginPath();
-          ctx.arc(x, bodyY, AVATAR_SIZE + 5, 0, Math.PI * 2);
+          ctx.arc(currentVisualX, currentVisualY, AVATAR_SIZE + 5, 0, Math.PI * 2);
           ctx.fill();
           ctx.globalCompositeOperation = "source-over";
+
+          ctx.beginPath();
+          ctx.arc(currentVisualX, currentVisualY, AVATAR_SIZE / 2, 0, Math.PI * 2);
+          ctx.clip();
+          if (image) ctx.drawImage(image, currentVisualX - AVATAR_SIZE / 2, currentVisualY - AVATAR_SIZE / 2, AVATAR_SIZE, AVATAR_SIZE);
+          ctx.restore();
         }
-
-        ctx.beginPath();
-        ctx.arc(x, bodyY, AVATAR_SIZE / 2, 0, Math.PI * 2);
-        ctx.clip();
-        
-        // Flip character based on direction
-        if (state.direction === 'left') {
-           ctx.translate(x, bodyY);
-           ctx.scale(-1, 1);
-           ctx.translate(-x, -bodyY);
-        }
-
-        if (img) ctx.drawImage(img, x - AVATAR_SIZE / 2, bodyY - AVATAR_SIZE / 2, AVATAR_SIZE, AVATAR_SIZE);
-        ctx.restore();
-      };
-
-      // Draw Main User
-      if (currentUser.gridX !== undefined) {
-        const avatar = avatars.get(currentUser.userId);
-        const image = avatar
-          ? loadedImages.get(avatar)
-          : defaultAvatarRef.current;
-
-        const myState = userAnimState.current.get(currentUser.userId);
-        drawCharacter(currentVisualX, currentVisualY, image, true, myState);
 
         ctx.fillStyle = "#fff";
         ctx.font = "14px Arial";
@@ -1084,10 +1036,11 @@ export const Arena = () => {
       usersVisual.forEach((visual, userId) => {
         const user = users.get(userId);
         if (!user) return;
-        const avatar = avatars.get(userId);
-        const image = avatar
-          ? loadedImages.get(avatar)
+        const avatarStr = avatars.get(userId);
+        const image = avatarStr && !avatarStr.startsWith("procedural:")
+          ? loadedImages.get(avatarStr)
           : defaultAvatarRef.current;
+        
         if (usersAnimationRef.current.get(userId)?.isMoving) {
           const trail = movementTrails.current.get(userId) || [];
           trail.push({ x: visual.visualX, y: visual.visualY, opacity: 1 });
@@ -1103,8 +1056,19 @@ export const Arena = () => {
           });
           ctx.globalCompositeOperation = "source-over";
         }
+
         const otherState = userAnimState.current.get(userId);
-        drawCharacter(visual.visualX, visual.visualY, image, false, otherState);
+
+        if (avatarStr && avatarStr.startsWith("procedural:")) {
+          drawProceduralCharacter(ctx, visual.visualX, visual.visualY, avatarStr, AVATAR_SIZE, otherState.walkCycle, otherState.direction);
+        } else {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(visual.visualX, visual.visualY, AVATAR_SIZE / 2, 0, Math.PI * 2);
+          ctx.clip();
+          if (image) ctx.drawImage(image, visual.visualX - AVATAR_SIZE / 2, visual.visualY - AVATAR_SIZE / 2, AVATAR_SIZE, AVATAR_SIZE);
+          ctx.restore();
+        }
         if (hoveredUser === userId) {
           ctx.strokeStyle = "#00ffd5";
           ctx.lineWidth = 2;
