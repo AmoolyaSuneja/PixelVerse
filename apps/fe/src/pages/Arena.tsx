@@ -651,6 +651,12 @@ export const Arena = () => {
           });
           break;
         case "user-joined":
+          userAnimState.current.set(message.payload.userId, { moving: false, walkCycle: 0, direction: 'down' });
+          usersAnimationRef.current.set(message.payload.userId, {
+            isMoving: false,
+            visualX: message.payload.x * 50,
+            visualY: message.payload.y * 50,
+          });
           setUsers((prev) => {
             const newUsers = new Map(prev);
             newUsers.set(message.payload.userId, {

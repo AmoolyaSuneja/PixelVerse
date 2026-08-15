@@ -125,9 +125,10 @@ export class User {
 
   initHandlers() {
     this.ws.on("message", async (data) => {
-      const parsedData = JSON.parse(data.toString());
-      switch (parsedData.type) {
-        case "join":
+      try {
+        const parsedData = JSON.parse(data.toString());
+        switch (parsedData.type) {
+          case "join":
           const spaceId = parsedData.payload.spaceId;
           const token = parsedData.payload.token;
           const userId = (
@@ -198,13 +199,18 @@ export class User {
               message.toLowerCase().includes(word.toLowerCase())
             );
 
-            await client.chatMessage.create({
-              data: {
-                spaceId: this.spaceId!,
-                userId: this.userId!,
-                message: message,
-              },
-            });
+            try {
+              await client.chatMessage.create({
+                data: {
+                  spaceId: this.spaceId!,
+                  userId: this.userId!,
+                  message: message,
+                },
+              });
+            } catch (dbError) {
+              console.error("Failed to save chat message to DB:", dbError);
+              // We still want to broadcast the message even if DB saving fails
+            }
 
             if (containsProfanity) {
               this.violationCount++;
@@ -296,6 +302,9 @@ export class User {
           const u2 = parsedData.payload.user2;
           RoomManager.getInstance().endCall(this.spaceId!, u1, u2);
           break;
+        }
+      } catch (err) {
+        console.error("Error processing websocket message:", err);
       }
     });
   }
