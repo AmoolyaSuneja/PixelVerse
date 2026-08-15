@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { drawProceduralCharacter } from "../utils/SpriteGenerator";
-import { drawSpriteSheetCharacter } from "../utils/SpriteRenderer";
 import { useAvatar } from "../contexts/AvatarsContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -1028,14 +1027,7 @@ export const Arena = () => {
         const myState = userAnimState.current.get(currentUser.id) || { moving: false, walkCycle: 0, direction: 'down' };
 
         if (avatarStr && avatarStr.startsWith("procedural:")) {
-          const isFemale = avatarStr.includes("female");
-          const spriteImg = isFemale ? animeFemaleSpriteRef.current : animeMaleSpriteRef.current;
-          
-          if (spriteImg) {
-            drawSpriteSheetCharacter(ctx, currentVisualX, currentVisualY, spriteImg, avatarStr, AVATAR_SIZE, myState.walkCycle, myState.direction);
-          } else {
-            drawProceduralCharacter(ctx, currentVisualX, currentVisualY, avatarStr, AVATAR_SIZE, myState.walkCycle, myState.direction);
-          }
+          drawProceduralCharacter(ctx, currentVisualX, currentVisualY, avatarStr, AVATAR_SIZE, myState.walkCycle, myState.direction);
         } else {
           // Fallback to DiceBear images if still used
           ctx.save();
@@ -1091,14 +1083,7 @@ export const Arena = () => {
         const otherState = userAnimState.current.get(id) || { moving: false, walkCycle: 0, direction: 'down' };
 
         if (avatarStr && avatarStr.startsWith("procedural:")) {
-          const isFemale = avatarStr.includes("female");
-          const spriteImg = isFemale ? animeFemaleSpriteRef.current : animeMaleSpriteRef.current;
-          
-          if (spriteImg) {
-            drawSpriteSheetCharacter(ctx, visual.visualX, visual.visualY, spriteImg, avatarStr, AVATAR_SIZE, otherState.walkCycle, otherState.direction);
-          } else {
-            drawProceduralCharacter(ctx, visual.visualX, visual.visualY, avatarStr, AVATAR_SIZE, otherState.walkCycle, otherState.direction);
-          }
+          drawProceduralCharacter(ctx, visual.visualX, visual.visualY, avatarStr, AVATAR_SIZE, otherState.walkCycle, otherState.direction);
         } else {
           ctx.save();
           ctx.beginPath();
