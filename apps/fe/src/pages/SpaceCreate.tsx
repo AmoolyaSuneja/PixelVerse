@@ -4,6 +4,8 @@ import { useAuth } from "../contexts/AuthContext";
 import axios from "axios";
 import { BeatLoader } from "react-spinners";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8080";
+
 export default function CreateSpace() {
   const [name, setName] = useState("");
   const [dimensions, setDimensions] = useState("100x100");
@@ -15,7 +17,7 @@ export default function CreateSpace() {
     setIsCreating(true);
     try {
       const response = await axios.post(
-        "http://localhost:8080/api/v1/space",
+        `${BACKEND_URL}/api/v1/space`,
         { name, dimensions },
         { headers: { Authorization: `Bearer ${token}` } },
       );

@@ -10,6 +10,8 @@ interface Avatar {
   imageUrl: string;
 }
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8080";
+
 export default function AvatarSelection() {
   const [avatars, setAvatars] = useState<Avatar[]>([]);
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
@@ -22,7 +24,7 @@ export default function AvatarSelection() {
     const fetchAvatars = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:8080/api/v1/avatars",
+          `${BACKEND_URL}/api/v1/avatars`,
         );
         setAvatars(response.data.avatars);
       } catch (error) {
@@ -41,7 +43,7 @@ export default function AvatarSelection() {
     setIsSaving(true);
     try {
       await axios.post(
-        "http://localhost:8080/api/v1/user/metadata",
+        `${BACKEND_URL}/api/v1/user/metadata`,
         { avatarId: selectedAvatar },
         { headers: { Authorization: `Bearer ${token}` } },
       );

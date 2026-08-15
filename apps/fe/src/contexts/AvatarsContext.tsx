@@ -5,6 +5,8 @@ type AvatarContextType = {
   fetchAvatars: (usernames: string[]) => Promise<void>;
 };
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8080";
+
 const AvatarContext = createContext<AvatarContextType | undefined>(undefined);
 
 export const AvatarProvider = ({ children }: { children: ReactNode }) => {
@@ -17,7 +19,7 @@ export const AvatarProvider = ({ children }: { children: ReactNode }) => {
       const usernamesString = usernames.join(",");
 
       const response = await fetch(
-        `http://localhost:8080/api/v1/user/metadata/bulk?userIds=${usernamesString}`,
+        `${BACKEND_URL}/api/v1/user/metadata/bulk?userIds=${usernamesString}`,
       );
       if (!response.ok) {
         throw new Error(

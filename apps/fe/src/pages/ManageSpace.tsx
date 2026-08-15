@@ -14,8 +14,10 @@ interface SpaceDetails {
   bannedUsers: BannedUser[];
 }
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8080";
+
 export default function ManageSpace() {
-  const { spaceId } = useParams();
+  const { spaceId } = useParams<{ spaceId: string }>();
   const { token } = useAuth();
   const [space, setSpace] = useState<SpaceDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -25,7 +27,7 @@ export default function ManageSpace() {
     const fetchSpaceDetails = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:8080/api/v1/space/${spaceId}`,
+          `${BACKEND_URL}/api/v1/space/${spaceId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           },
@@ -44,7 +46,7 @@ export default function ManageSpace() {
   const handleUnban = async (userId: string) => {
     try {
       await axios.post(
-        `http://localhost:8080/api/v1/space/${spaceId}/unban`,
+        `${BACKEND_URL}/api/v1/space/${spaceId}/unban`,
         { userId },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -52,7 +54,7 @@ export default function ManageSpace() {
       );
 
       const response = await axios.get(
-        `http://localhost:8080/api/v1/space/${spaceId}`,
+        `${BACKEND_URL}/api/v1/space/${spaceId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },

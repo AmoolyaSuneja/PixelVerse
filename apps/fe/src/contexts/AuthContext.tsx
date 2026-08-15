@@ -21,6 +21,8 @@ type AuthContextType = {
   logout: () => void;
 };
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8080";
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -58,7 +60,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (username: string, password: string) => {
     try {
-      const response = await fetch("http://localhost:8080/api/v1/signin", {
+      const response = await fetch(`${BACKEND_URL}/api/v1/signin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
@@ -87,7 +89,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signup = async (username: string, password: string) => {
     try {
       const signupResponse = await fetch(
-        "http://localhost:8080/api/v1/signup",
+        `${BACKEND_URL}/api/v1/signup`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

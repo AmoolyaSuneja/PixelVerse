@@ -11,6 +11,8 @@ interface Space {
   thumbnail?: string;
 }
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8080";
+
 export default function Dashboard() {
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [spaceIdInput, setSpaceIdInput] = useState("");
@@ -23,7 +25,7 @@ export default function Dashboard() {
     const fetchSpaces = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:8080/api/v1/space/all",
+          `${BACKEND_URL}/api/v1/space/all`,
           {
             headers: { Authorization: `Bearer ${token}` },
           },

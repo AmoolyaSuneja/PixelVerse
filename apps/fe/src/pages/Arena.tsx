@@ -590,7 +590,8 @@ export const Arena = () => {
   useEffect(() => {
     if (isLoading || !token || !spaceId) return;
 
-    wsRef.current = new WebSocket("ws://localhost:8081");
+    const wsUrl = import.meta.env.VITE_WS_URL || "ws://localhost:8081";
+    wsRef.current = new WebSocket(wsUrl);
     wsRef.current.onopen = () => {
       wsRef.current!.send(
         JSON.stringify({ type: "join", payload: { spaceId, token } }),
