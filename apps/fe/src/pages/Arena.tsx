@@ -734,7 +734,7 @@ export const Arena = () => {
           ]);
           break;
         case "movement":
-          const { id, userId, x, y } = message.payload;
+          const { id, x, y } = message.payload;
           if (id === currentUser.id) {
             setCurrentUser((prev: any) => ({ ...prev, gridX: x, gridY: y }));
           } else {
@@ -843,6 +843,27 @@ export const Arena = () => {
       containerRef.current.focus();
     }
   }, []);
+
+  const handleCanvasHover = (e: React.MouseEvent) => {
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    let hovered = null;
+    users.forEach((user, id) => {
+      const visualX = user.gridX * 50;
+      const visualY = user.gridY * 50;
+      const dist = Math.sqrt(
+        Math.pow(mouseX - visualX, 2) + Math.pow(mouseY - visualY, 2),
+      );
+      if (dist < 50 / 2) {
+        hovered = id;
+      }
+    });
+    setHoveredUser(hovered);
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     keysPressed.current.add(e.key.toLowerCase());
