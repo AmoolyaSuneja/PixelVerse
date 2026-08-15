@@ -5,7 +5,9 @@ import cors from "cors";
 const app = express();
 app.use(
   cors({
-    origin: ["https://pixelverse.stelliform.xyz", "http://localhost:5173"],
+    origin: (origin, callback) => {
+      callback(null, true);
+    },
     credentials: true,
   }),
 );
