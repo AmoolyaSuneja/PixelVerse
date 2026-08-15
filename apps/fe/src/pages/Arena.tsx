@@ -901,7 +901,7 @@ export const Arena = () => {
       }
 
       const isLocalMoving = dx !== 0 || dy !== 0;
-      let animState = userAnimState.current.get(currentUser.userId) || { moving: false, walkCycle: 0, direction: 'down' };
+      let animState = userAnimState.current.get(currentUser.id) || { moving: false, walkCycle: 0, direction: 'down' };
       
       if (isLocalMoving) {
         currentVisualX += dx;
@@ -933,7 +933,7 @@ export const Arena = () => {
         animState.moving = false;
         animState.walkCycle = 0;
       }
-      userAnimState.current.set(currentUser.userId, animState);
+      userAnimState.current.set(currentUser.id, animState);
 
       // Interpolate Other Users
       const usersVisual = new Map<string, { visualX: number; visualY: number }>();
