@@ -61,16 +61,21 @@ export const drawProceduralCharacter = (
   ctx.lineWidth = size * 0.25;
   ctx.lineCap = "round";
   
+  // Calculate swing directions based on facing direction
+  const isVertical = direction === "up" || direction === "down";
+  const swingX = isVertical ? 0 : limbSwing;
+  const swingY = isVertical ? limbSwing * 0.5 : 0; // Vertical swing is subtle (Y axis)
+
   // Left Leg
   ctx.beginPath();
   ctx.moveTo(-size * 0.2, bodyY + size * 0.2);
-  ctx.lineTo(-size * 0.2 + limbSwing, bodyY + size * 0.6);
+  ctx.lineTo(-size * 0.2 + swingX, bodyY + size * 0.6 + swingY);
   ctx.stroke();
 
   // Right Leg
   ctx.beginPath();
   ctx.moveTo(size * 0.2, bodyY + size * 0.2);
-  ctx.lineTo(size * 0.2 - limbSwing, bodyY + size * 0.6);
+  ctx.lineTo(size * 0.2 - swingX, bodyY + size * 0.6 - swingY);
   ctx.stroke();
 
   // Draw Torso (Anime Chibi style: small body, big head)
@@ -87,16 +92,16 @@ export const drawProceduralCharacter = (
   ctx.strokeStyle = palette.shirt;
   ctx.lineWidth = size * 0.15;
   
-  // Left Arm (Behind Torso if walking right)
+  // Left Arm (Swings opposite to Left Leg)
   ctx.beginPath();
   ctx.moveTo(-torsoWidth / 2 - size * 0.05, bodyY - size * 0.1);
-  ctx.lineTo(-torsoWidth / 2 - size * 0.05 - limbSwing, bodyY + size * 0.25);
+  ctx.lineTo(-torsoWidth / 2 - size * 0.05 - swingX, bodyY + size * 0.25 - swingY);
   ctx.stroke();
 
-  // Right Arm (In Front)
+  // Right Arm (Swings opposite to Right Leg)
   ctx.beginPath();
   ctx.moveTo(torsoWidth / 2 + size * 0.05, bodyY - size * 0.1);
-  ctx.lineTo(torsoWidth / 2 + size * 0.05 + limbSwing, bodyY + size * 0.25);
+  ctx.lineTo(torsoWidth / 2 + size * 0.05 + swingX, bodyY + size * 0.25 + swingY);
   ctx.stroke();
 
   // Draw Head (Chibi - very large head)
