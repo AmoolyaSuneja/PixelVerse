@@ -47,10 +47,13 @@ export const drawProceduralCharacter = (
     ctx.scale(-1, 1);
   }
 
-  // Bobbing effect for walking
+  // Fluid walking animation mechanics
   const isMoving = walkCycle > 0;
-  const bob = isMoving ? Math.abs(Math.sin(walkCycle)) * 4 : 0;
-  const limbSwing = isMoving ? Math.sin(walkCycle) * 12 : 0;
+  const speed = 0.2; // Smooth out the animation speed
+  const bob = isMoving ? Math.abs(Math.sin(walkCycle * speed)) * 4 : 0;
+  const limbSwing = isMoving ? Math.sin(walkCycle * speed) * (size * 0.4) : 0;
+  const headTilt = isMoving ? Math.sin(walkCycle * speed * 0.5) * 0.08 : 0;
+  
   const bodyY = -bob;
 
   // Draw Legs
@@ -97,6 +100,11 @@ export const drawProceduralCharacter = (
   ctx.stroke();
 
   // Draw Head (Chibi - very large head)
+  ctx.save();
+  ctx.translate(0, bodyY - size * 0.5); // move to neck pivot
+  ctx.rotate(headTilt); // Head swaying side to side as they walk
+  ctx.translate(0, -(bodyY - size * 0.5)); // move back
+
   ctx.fillStyle = palette.skin;
   const headSize = size * 0.7; // increased head size
   ctx.fillRect(-headSize / 2, bodyY - size * 0.85, headSize, headSize);
@@ -157,5 +165,6 @@ export const drawProceduralCharacter = (
     ctx.fillRect(-headSize / 2, bodyY - size * 0.9, headSize, headSize * 0.3);
   }
 
-  ctx.restore();
+  ctx.restore(); // restore head rotation
+  ctx.restore(); // restore character translation
 };
