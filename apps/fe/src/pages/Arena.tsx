@@ -148,7 +148,13 @@ export const Arena = () => {
     visualY: 0,
   });
   const usersAnimationRef = useRef(new Map<string, any>());
-  const MOVE_DURATION = 200;
+  const MOVE_SPEED = 5; // pixels per frame
+  const NETWORK_SYNC_INTERVAL = 50; // ms
+  const lastSyncTimeRef = useRef(0);
+  const keysPressed = useRef<Set<string>>(new Set());
+  
+  // Animation state tracking for drawing limbs
+  const userAnimState = useRef(new Map<string, { moving: boolean; walkCycle: number; direction: string }>());
 
   // --- Cleanup ---
   useEffect(() => {
@@ -618,14 +624,10 @@ export const Arena = () => {
           });
           currentUserAnimationRef.current = {
             isMoving: false,
-            startX: initialGridX * 50,
-            startY: initialGridY * 50,
-            targetX: initialGridX * 50,
-            targetY: initialGridY * 50,
-            moveStartTime: 0,
             visualX: initialGridX * 50,
             visualY: initialGridY * 50,
           };
+          userAnimState.current.set(message.payload.userId, { moving: false, walkCycle: 0, direction: 'down' });
           const userMap = new Map();
           message.payload.users.forEach((user: any) => {
             userMap.set(user.userId, {
@@ -635,14 +637,10 @@ export const Arena = () => {
             });
             usersAnimationRef.current.set(user.userId, {
               isMoving: false,
-              startX: user.x * 50,
-              startY: user.y * 50,
-              targetX: user.x * 50,
-              targetY: user.y * 50,
-              moveStartTime: 0,
               visualX: user.x * 50,
               visualY: user.y * 50,
             });
+            userAnimState.current.set(user.userId, { moving: false, walkCycle: 0, direction: 'down' });
           });
           setUsers(userMap);
           const ongoingCalls = message.payload.ongoingCalls || [];
@@ -720,12 +718,10 @@ export const Arena = () => {
               if (user) {
                 const animation = usersAnimationRef.current.get(userId) || {};
                 newUsers.set(userId, { ...user, gridX: x, gridY: y });
+                // We use simple linear interpolation for other users
                 animation.isMoving = true;
-                animation.startX = animation.visualX || user.gridX * 50;
-                animation.startY = animation.visualY || user.gridY * 50;
                 animation.targetX = x * 50;
                 animation.targetY = y * 50;
-                animation.moveStartTime = currentTime;
                 usersAnimationRef.current.set(userId, animation);
               }
               return newUsers;
@@ -843,23 +839,11 @@ export const Arena = () => {
   }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (currentUser.gridX === undefined || currentUser.gridY === undefined)
-      return;
-    const { gridX, gridY } = currentUser;
-    switch (e.key) {
-      case "ArrowUp":
-        handleMove(gridX, gridY - 1);
-        break;
-      case "ArrowDown":
-        handleMove(gridX, gridY + 1);
-        break;
-      case "ArrowLeft":
-        handleMove(gridX - 1, gridY);
-        break;
-      case "ArrowRight":
-        handleMove(gridX + 1, gridY);
-        break;
-    }
+    keysPressed.current.add(e.key.toLowerCase());
+  };
+
+  const handleKeyUp = (e: React.KeyboardEvent) => {
+    keysPressed.current.delete(e.key.toLowerCase());
   };
 
   // --- ADDED MISSING FUNCTION HERE ---
@@ -893,59 +877,95 @@ export const Arena = () => {
     if (!ctx) return;
     let animationFrameId: number;
 
-    const render = () => {
+      const render = () => {
       const currentTime = Date.now();
 
-      // Current User
-      let currentVisualX = currentUser.gridX * 50;
-      let currentVisualY = currentUser.gridY * 50;
-      if (currentUserAnimationRef.current.isMoving) {
-        const elapsed =
-          currentTime - currentUserAnimationRef.current.moveStartTime;
-        const progress = Math.min(elapsed / MOVE_DURATION, 1);
-        currentVisualX =
-          currentUserAnimationRef.current.startX +
-          progress *
-            (currentUserAnimationRef.current.targetX -
-              currentUserAnimationRef.current.startX);
-        currentVisualY =
-          currentUserAnimationRef.current.startY +
-          progress *
-            (currentUserAnimationRef.current.targetY -
-              currentUserAnimationRef.current.startY);
-        currentUserAnimationRef.current.visualX = currentVisualX;
-        currentUserAnimationRef.current.visualY = currentVisualY;
-        if (progress >= 1) currentUserAnimationRef.current.isMoving = false;
-      } else {
-        currentUserAnimationRef.current.visualX = currentVisualX;
-        currentUserAnimationRef.current.visualY = currentVisualY;
+      // Update Current User Position locally via keys
+      let { visualX: currentVisualX, visualY: currentVisualY } = currentUserAnimationRef.current;
+      
+      let dx = 0;
+      let dy = 0;
+      if (keysPressed.current.has("arrowup") || keysPressed.current.has("w")) dy -= MOVE_SPEED;
+      if (keysPressed.current.has("arrowdown") || keysPressed.current.has("s")) dy += MOVE_SPEED;
+      if (keysPressed.current.has("arrowleft") || keysPressed.current.has("a")) dx -= MOVE_SPEED;
+      if (keysPressed.current.has("arrowright") || keysPressed.current.has("d")) dx += MOVE_SPEED;
+
+      // Normalize diagonal speed
+      if (dx !== 0 && dy !== 0) {
+        const length = Math.sqrt(dx * dx + dy * dy);
+        dx = (dx / length) * MOVE_SPEED;
+        dy = (dy / length) * MOVE_SPEED;
       }
 
-      // Other Users
-      const usersVisual = new Map<
-        string,
-        { visualX: number; visualY: number }
-      >();
-      users.forEach((user, userId) => {
-        const animation = usersAnimationRef.current.get(userId) || {};
-        let visualX = user.gridX * 50;
-        let visualY = user.gridY * 50;
-        if (animation.isMoving) {
-          const elapsed = currentTime - animation.moveStartTime;
-          const progress = Math.min(elapsed / MOVE_DURATION, 1);
-          visualX =
-            animation.startX +
-            progress * (animation.targetX - animation.startX);
-          visualY =
-            animation.startY +
-            progress * (animation.targetY - animation.startY);
-          animation.visualX = visualX;
-          animation.visualY = visualY;
-          if (progress >= 1) animation.isMoving = false;
+      const isLocalMoving = dx !== 0 || dy !== 0;
+      let animState = userAnimState.current.get(currentUser.userId) || { moving: false, walkCycle: 0, direction: 'down' };
+      
+      if (isLocalMoving) {
+        currentVisualX += dx;
+        currentVisualY += dy;
+        // Restrict to canvas bounds
+        currentVisualX = Math.max(AVATAR_SIZE/2, Math.min(canvas.width - AVATAR_SIZE/2, currentVisualX));
+        currentVisualY = Math.max(AVATAR_SIZE/2, Math.min(canvas.height - AVATAR_SIZE/2, currentVisualY));
+        
+        currentUserAnimationRef.current.visualX = currentVisualX;
+        currentUserAnimationRef.current.visualY = currentVisualY;
+        
+        animState.moving = true;
+        animState.walkCycle += 0.15; // Speed of walking animation
+        if (Math.abs(dx) > Math.abs(dy)) {
+           animState.direction = dx > 0 ? 'right' : 'left';
         } else {
-          animation.visualX = visualX;
-          animation.visualY = visualY;
+           animState.direction = dy > 0 ? 'down' : 'up';
         }
+
+        // Sync with network periodically
+        if (currentTime - lastSyncTimeRef.current > NETWORK_SYNC_INTERVAL) {
+           wsRef.current?.send(JSON.stringify({
+              type: "move",
+              payload: { x: currentVisualX / 50, y: currentVisualY / 50, userId: currentUser.userId }
+           }));
+           lastSyncTimeRef.current = currentTime;
+        }
+      } else {
+        animState.moving = false;
+        animState.walkCycle = 0;
+      }
+      userAnimState.current.set(currentUser.userId, animState);
+
+      // Interpolate Other Users
+      const usersVisual = new Map<string, { visualX: number; visualY: number }>();
+      users.forEach((user, userId) => {
+        const animation = usersAnimationRef.current.get(userId) || { visualX: user.gridX * 50, visualY: user.gridY * 50 };
+        let { visualX, visualY } = animation;
+        let otherAnimState = userAnimState.current.get(userId) || { moving: false, walkCycle: 0, direction: 'down' };
+
+        if (animation.targetX !== undefined && animation.targetY !== undefined) {
+          const tdx = animation.targetX - visualX;
+          const tdy = animation.targetY - visualY;
+          const dist = Math.sqrt(tdx * tdx + tdy * tdy);
+          
+          if (dist > 1) {
+            visualX += tdx * 0.2; // Interpolation factor
+            visualY += tdy * 0.2;
+            otherAnimState.moving = true;
+            otherAnimState.walkCycle += 0.15;
+            if (Math.abs(tdx) > Math.abs(tdy)) {
+               otherAnimState.direction = tdx > 0 ? 'right' : 'left';
+            } else {
+               otherAnimState.direction = tdy > 0 ? 'down' : 'up';
+            }
+          } else {
+            visualX = animation.targetX;
+            visualY = animation.targetY;
+            otherAnimState.moving = false;
+            otherAnimState.walkCycle = 0;
+          }
+        }
+        
+        animation.visualX = visualX;
+        animation.visualY = visualY;
+        usersAnimationRef.current.set(userId, animation);
+        userAnimState.current.set(userId, otherAnimState);
         usersVisual.set(userId, { visualX, visualY });
       });
 
@@ -1000,49 +1020,79 @@ export const Arena = () => {
         const image = avatar
           ? loadedImages.get(avatar)
           : defaultAvatarRef.current;
-        ctx.save();
-        ctx.globalCompositeOperation = "lighter";
-        const hologramGradient = ctx.createRadialGradient(
-          currentVisualX,
-          currentVisualY,
-          0,
-          currentVisualX,
-          currentVisualY,
-          AVATAR_SIZE * 2,
-        );
-        hologramGradient.addColorStop(0, "hsla(210, 100%, 50%, 0.3)");
-        hologramGradient.addColorStop(1, "hsla(180, 100%, 50%, 0)");
-        ctx.fillStyle = hologramGradient;
-        ctx.beginPath();
-        ctx.arc(
-          currentVisualX,
-          currentVisualY,
-          AVATAR_SIZE + 5,
-          0,
-          Math.PI * 2,
-        );
-        ctx.fill();
-        ctx.restore();
+        // --- Draw Procedural Animated Limbs ---
+        const drawLimbs = (x: number, y: number, state: any) => {
+          ctx.save();
+          ctx.translate(x, y);
+          
+          const limbSwing = state.moving ? Math.sin(state.walkCycle) * 15 : 0;
+          ctx.strokeStyle = "#ffffff";
+          ctx.lineWidth = 6;
+          ctx.lineCap = "round";
 
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(
-          currentVisualX,
-          currentVisualY,
-          AVATAR_SIZE / 2,
-          0,
-          Math.PI * 2,
-        );
-        ctx.clip();
-        if (image)
-          ctx.drawImage(
-            image,
-            currentVisualX - AVATAR_SIZE / 2,
-            currentVisualY - AVATAR_SIZE / 2,
-            AVATAR_SIZE,
-            AVATAR_SIZE,
-          );
-        ctx.restore();
+          // Legs
+          ctx.beginPath();
+          ctx.moveTo(-10, AVATAR_SIZE/2 - 5);
+          ctx.lineTo(-10 + limbSwing, AVATAR_SIZE/2 + 15);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.moveTo(10, AVATAR_SIZE/2 - 5);
+          ctx.lineTo(10 - limbSwing, AVATAR_SIZE/2 + 15);
+          ctx.stroke();
+
+          // Arms
+          ctx.beginPath();
+          ctx.moveTo(-AVATAR_SIZE/2 + 5, 0);
+          ctx.lineTo(-AVATAR_SIZE/2 - 5 - limbSwing, 15);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.moveTo(AVATAR_SIZE/2 - 5, 0);
+          ctx.lineTo(AVATAR_SIZE/2 + 5 + limbSwing, 15);
+          ctx.stroke();
+
+          ctx.restore();
+        };
+
+        const drawCharacter = (x: number, y: number, img: any, isMe: boolean, state: any) => {
+          // Bobbing effect for the body
+          const bob = state.moving ? Math.abs(Math.sin(state.walkCycle)) * 5 : 0;
+          const bodyY = y - bob;
+          
+          drawLimbs(x, bodyY, state);
+
+          // Draw Body/Head
+          ctx.save();
+          if (isMe) {
+            ctx.globalCompositeOperation = "lighter";
+            const hologramGradient = ctx.createRadialGradient(x, bodyY, 0, x, bodyY, AVATAR_SIZE * 1.5);
+            hologramGradient.addColorStop(0, "hsla(210, 100%, 50%, 0.4)");
+            hologramGradient.addColorStop(1, "hsla(180, 100%, 50%, 0)");
+            ctx.fillStyle = hologramGradient;
+            ctx.beginPath();
+            ctx.arc(x, bodyY, AVATAR_SIZE + 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalCompositeOperation = "source-over";
+          }
+
+          ctx.beginPath();
+          ctx.arc(x, bodyY, AVATAR_SIZE / 2, 0, Math.PI * 2);
+          ctx.clip();
+          
+          // Flip character based on direction
+          if (state.direction === 'left') {
+             ctx.translate(x, bodyY);
+             ctx.scale(-1, 1);
+             ctx.translate(-x, -bodyY);
+          }
+
+          if (img) ctx.drawImage(img, x - AVATAR_SIZE / 2, bodyY - AVATAR_SIZE / 2, AVATAR_SIZE, AVATAR_SIZE);
+          ctx.restore();
+        };
+
+        const myState = userAnimState.current.get(currentUser.userId);
+        drawCharacter(currentVisualX, currentVisualY, image, true, myState);
 
         ctx.fillStyle = "#fff";
         ctx.font = "14px Arial";
@@ -1073,25 +1123,8 @@ export const Arena = () => {
           });
           ctx.globalCompositeOperation = "source-over";
         }
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(
-          visual.visualX,
-          visual.visualY,
-          AVATAR_SIZE / 2,
-          0,
-          Math.PI * 2,
-        );
-        ctx.clip();
-        if (image)
-          ctx.drawImage(
-            image,
-            visual.visualX - AVATAR_SIZE / 2,
-            visual.visualY - AVATAR_SIZE / 2,
-            AVATAR_SIZE,
-            AVATAR_SIZE,
-          );
-        ctx.restore();
+        const otherState = userAnimState.current.get(userId);
+        drawCharacter(visual.visualX, visual.visualY, image, false, otherState);
         if (hoveredUser === userId) {
           ctx.strokeStyle = "#00ffd5";
           ctx.lineWidth = 2;
@@ -1141,54 +1174,56 @@ export const Arena = () => {
   return (
     <div
       ref={containerRef}
-      className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white p-4 outline-none"
-      style={{ fontFamily: "'Poppins', sans-serif" }}
+      className="h-screen w-screen bg-[#0a0a0f] text-white overflow-hidden outline-none flex flex-col font-sans"
       onKeyDown={handleKeyDown}
+      onKeyUp={handleKeyUp}
       tabIndex={0}
       autoFocus
     >
-      <div className="w-full h-screen flex flex-col">
-        {/* Header */}
-        <div className="mb-4 text-center flex justify-between items-center bg-slate-900/50 p-4 rounded-xl">
-          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+      {/* Dynamic Background */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#1a1a2e] via-[#0a0a0f] to-[#05050a] pointer-events-none -z-10" />
+      <div className="relative w-full h-full flex flex-col z-10 p-4 gap-4">
+        {/* Floating Header */}
+        <div className="flex justify-between items-center bg-white/5 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.5)]">
+          <h1 className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 tracking-tight">
             Pixel Arena
           </h1>
-          <div className="flex gap-4">
-            <div className="bg-gray-800 px-4 py-2 rounded-lg">
-              Space: {spaceId}
+          <div className="flex gap-4 items-center">
+            <div className="bg-black/40 px-5 py-2 rounded-xl text-sm font-medium tracking-wide text-cyan-100 border border-white/5">
+              <span className="opacity-50 mr-2">SPACE</span> {spaceId}
             </div>
             <button
               onClick={handleExitSpace}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg"
+              className="px-6 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl transition-all duration-300 font-semibold"
             >
-              Exit
+              Disconnect
             </button>
           </div>
         </div>
 
-        <div className="flex-1 flex gap-4 overflow-hidden">
+        <div className="flex-1 flex gap-4 overflow-hidden relative">
           {/* LEFT PANEL: Chat */}
-          <div className="w-1/4 flex flex-col gap-4">
-            <div className="bg-gray-800 rounded-xl p-4 shadow-lg flex-1 flex flex-col">
-              <h3 className="font-bold text-gray-400 mb-2">Global Chat</h3>
+          <div className="w-80 flex flex-col gap-4">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5 flex-1 flex flex-col shadow-2xl">
+              <h3 className="font-bold text-white/70 mb-4 text-sm tracking-widest uppercase">Global Chat</h3>
               <div
                 ref={globalMessagesContainerRef}
-                className="flex-1 overflow-y-auto mb-2 space-y-2 pr-2"
+                className="flex-1 overflow-y-auto mb-4 space-y-3 pr-2 scrollbar-hide"
               >
                 {globalMessages
                   .filter((m) => !blockedUsers.has(m.userId))
                   .map((msg, i) => (
-                    <div key={i} className="text-sm bg-gray-700/50 p-2 rounded">
+                    <div key={i} className="text-sm bg-black/20 p-3 rounded-xl border border-white/5 break-words">
                       <span
                         className={
                           msg.userId === "SYSTEM"
-                            ? "text-yellow-400"
-                            : "text-blue-400 font-bold"
+                            ? "text-yellow-400 font-bold"
+                            : "text-cyan-400 font-bold"
                         }
                       >
                         {msg.userId}:
                       </span>{" "}
-                      <span className="text-gray-200">{msg.message}</span>
+                      <span className="text-gray-300 leading-relaxed">{msg.message}</span>
                     </div>
                   ))}
               </div>
@@ -1200,8 +1235,8 @@ export const Arena = () => {
                   (sendGlobalMessage(globalMessageInput),
                   setGlobalMessageInput(""))
                 }
-                className="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm"
-                placeholder="Type message..."
+                className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-cyan-500/50 transition-colors text-white placeholder-white/30"
+                placeholder="Type a message..."
                 disabled={isKicked}
               />
             </div>
@@ -1243,10 +1278,10 @@ export const Arena = () => {
           </div>
 
           {/* MIDDLE: Canvas Game */}
-          <div className="flex-1 relative border-2 border-gray-700 rounded-xl overflow-hidden bg-black">
+          <div className="flex-1 relative border border-white/10 rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] bg-black/50 backdrop-blur-sm">
             <div
               ref={scrollContainerRef}
-              className="w-full h-full overflow-auto scrollbar-hide"
+              className="w-full h-full overflow-auto scrollbar-hide cursor-crosshair"
               onMouseMove={handleCanvasHover}
             >
               <canvas ref={canvasRef} width={2000} height={2000} />
@@ -1455,23 +1490,29 @@ export const Arena = () => {
           </div>
 
           {/* RIGHT PANEL: Nearby Users */}
-          <div className="w-64 bg-gray-800 rounded-xl p-4 shadow-lg overflow-y-auto">
-            <h3 className="font-bold text-gray-400 mb-4">Nearby Players</h3>
+          <div className="w-72 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl overflow-y-auto scrollbar-hide flex flex-col">
+            <h3 className="font-bold text-white/70 mb-4 text-sm tracking-widest uppercase flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+              Nearby Players
+            </h3>
             {nearbyUsers.size === 0 && (
-              <p className="text-gray-500 text-sm">No one is close by.</p>
+              <div className="flex-1 flex flex-col items-center justify-center opacity-30 text-center p-4">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mb-2"><circle cx="12" cy="12" r="10"></circle><path d="M16 16s-1.5-2-4-2-4 2-4 2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
+                <p className="text-sm">It's quiet... too quiet.</p>
+              </div>
             )}
 
             <div className="space-y-3">
               {Array.from(nearbyUsers).map((userId) => (
                 <div
                   key={userId}
-                  className="bg-gray-700/50 p-3 rounded-lg flex flex-col gap-2"
+                  className="bg-black/30 border border-white/5 p-4 rounded-xl flex flex-col gap-3 transition-transform hover:scale-[1.02]"
                 >
                   <div className="flex justify-between items-center">
-                    <span className="font-bold">{userId}</span>
+                    <span className="font-bold text-cyan-50">{userId}</span>
                     {userCallStatus.get(userId) && (
-                      <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded">
-                        Busy
+                      <span className="text-[10px] uppercase font-bold bg-rose-500/20 text-rose-400 px-2 py-1 rounded-full border border-rose-500/20">
+                        In Call
                       </span>
                     )}
                   </div>

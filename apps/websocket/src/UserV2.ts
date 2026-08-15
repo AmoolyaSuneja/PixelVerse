@@ -251,14 +251,16 @@ export class User {
           break;
 
         case "move":
-          const moveX = parseInt(parsedData.payload.x);
-          const moveY = parseInt(parsedData.payload.y);
-          const xDisplacement = Math.abs(this.x - moveX);
-          const yDisplacement = Math.abs(this.y - moveY);
-          if (
-            (xDisplacement == 1 && yDisplacement == 0) ||
-            (xDisplacement == 0 && yDisplacement == 1)
-          ) {
+          const moveX = parseFloat(parsedData.payload.x);
+          const moveY = parseFloat(parsedData.payload.y);
+          
+          // Relaxed validation for continuous pixel movement
+          const distance = Math.sqrt(
+            Math.pow(this.x - moveX, 2) + Math.pow(this.y - moveY, 2)
+          );
+          
+          // Allow up to 50 units of distance per network tick to prevent teleporting
+          if (distance <= 50) {
             this.x = moveX;
             this.y = moveY;
 
