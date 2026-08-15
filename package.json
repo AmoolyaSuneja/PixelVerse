@@ -1,0 +1,30 @@
+{
+  "name": "pixelverse",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "build:backend": "turbo run build --filter=http",
+    "build:websocket": "turbo run build --filter=websocket",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "check-types": "turbo run check-types",
+    "db:generate": "cd packages/db && npx prisma generate && cd ../../",
+    "start:backend": "cd apps/http && npm run start",
+    "start:websocket": "cd apps/websocket && npm run start",
+    "start:frontend": "cd apps/fe && npm run dev"
+  },
+  "devDependencies": {
+    "prettier": "^3.5.3",
+    "turbo": "^2.4.4",
+    "typescript": "5.8.2"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "npm@10.9.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}
