@@ -1,0 +1,38 @@
+name: Continuous Deployment (Frontend)
+on:
+  push:
+    branches: [main]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Docker login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./docker/Dockerfile.frontend
+          push: true
+          tags: krishnasaxena/pixelverse-frontend:${{ github.sha }}
+          build-args: |
+            VITE_FIREBASE_API_KEY=${{ secrets.VITE_FIREBASE_API_KEY }}
+            VITE_FIREBASE_AUTH_DOMAIN=${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+            VITE_FIREBASE_PROJECT_ID=${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+            VITE_FIREBASE_STORAGE_BUCKET=${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+            VITE_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+            VITE_FIREBASE_APP_ID=${{ secrets.VITE_FIREBASE_APP_ID }}
+      - name: Deploy to the VM
+        env:
+          PORT: 3000
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/ssh_key
+          chmod 600 ~/ssh_key
+          ssh -o StrictHostKeyChecking=no -i ~/ssh_key ubuntu@${{ secrets.DO_HOST }} -t "sudo docker pull krishnasaxena/pixelverse-frontend:${{ github.sha }} && sudo docker rm -f user_frontend || true && sudo docker run --name user_frontend -d -p 3000:3000 -e PORT='${PORT}' -e MONGO_URL='${MONGO_URL}' -e JWT_SECRET='${JWT_SECRET}' krishnasaxena/pixelverse-frontend:${{ github.sha }} && sudo docker image prune -a -f"
