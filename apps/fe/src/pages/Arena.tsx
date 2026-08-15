@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Avatar, Space, Element, MapElement } from "../types";
 import { drawProceduralCharacter } from "../utils/SpriteGenerator";
 import { useAvatar } from "../contexts/AvatarsContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -1002,7 +1001,7 @@ export const Arena = () => {
           ? loadedImages.get(avatarStr)
           : defaultAvatarRef.current;
         
-        const myState = userAnimState.current.get(currentUser.userId);
+        const myState = userAnimState.current.get(currentUser.userId) || { moving: false, walkCycle: 0, direction: 'down' };
 
         if (avatarStr && avatarStr.startsWith("procedural:")) {
           drawProceduralCharacter(ctx, currentVisualX, currentVisualY, avatarStr, AVATAR_SIZE, myState.walkCycle, myState.direction);
@@ -1057,7 +1056,7 @@ export const Arena = () => {
           ctx.globalCompositeOperation = "source-over";
         }
 
-        const otherState = userAnimState.current.get(userId);
+        const otherState = userAnimState.current.get(userId) || { moving: false, walkCycle: 0, direction: 'down' };
 
         if (avatarStr && avatarStr.startsWith("procedural:")) {
           drawProceduralCharacter(ctx, visual.visualX, visual.visualY, avatarStr, AVATAR_SIZE, otherState.walkCycle, otherState.direction);
