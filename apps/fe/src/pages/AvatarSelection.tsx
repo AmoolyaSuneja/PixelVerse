@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import axios from "axios";
 import { BeatLoader } from "react-spinners";
-import { generateProceduralDataURL } from "../utils/SpriteGenerator";
 
 interface Avatar {
   id: string;
