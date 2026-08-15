@@ -166,18 +166,18 @@ export class User {
           this.x = 5 + existingUsers;
           this.y = 5 + existingUsers;
 
-          const roomCalls =
-            RoomManager.getInstance().ongoingCalls.get(spaceId) || new Map();
+          const roomCalls = RoomManager.getInstance().ongoingCalls.get(spaceId) || new Map();
           this.send({
             type: "space-joined",
             payload: {
+              id: this.id,
               userId: this.userId,
               spawn: { x: this.x, y: this.y },
               users:
                 RoomManager.getInstance()
                   .rooms.get(spaceId)
                   ?.filter((x) => x.id !== this.id)
-                  ?.map((u) => ({ userId: u.userId, x: u.x, y: u.y })) ?? [],
+                  ?.map((u) => ({ id: u.id, userId: u.userId, x: u.x, y: u.y })) ?? [],
               ongoingCalls: Array.from(roomCalls.entries()),
             },
           });
@@ -185,7 +185,7 @@ export class User {
           RoomManager.getInstance().broadcast(
             {
               type: "user-joined",
-              payload: { userId: this.userId, x: this.x, y: this.y },
+              payload: { id: this.id, userId: this.userId, x: this.x, y: this.y },
             },
             this,
             this.spaceId!
@@ -272,13 +272,13 @@ export class User {
 
             this.send({
               type: "movement",
-              payload: { userId: this.userId, x: this.x, y: this.y },
+              payload: { id: this.id, userId: this.userId, x: this.x, y: this.y },
             });
 
             RoomManager.getInstance().broadcast(
               {
                 type: "movement",
-                payload: { userId: this.userId, x: this.x, y: this.y },
+                payload: { id: this.id, userId: this.userId, x: this.x, y: this.y },
               },
               this,
               this.spaceId!
@@ -358,7 +358,7 @@ export class User {
     RoomManager.getInstance().broadcast(
       {
         type: "user-left",
-        payload: { userId: this.userId },
+        payload: { id: this.id, userId: this.userId },
       },
       this,
       this.spaceId!

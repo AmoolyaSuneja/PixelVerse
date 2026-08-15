@@ -3,6 +3,9 @@ import { router } from "./routes/v1";
 import cors from "cors";
 
 const app = express();
+app.get("/", (req, res) => {
+  res.send("PixelVerse API is running perfectly!");
+});
 app.use(
   cors({
     origin: (origin, callback) => {

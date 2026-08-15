@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { drawProceduralCharacter } from "../utils/SpriteGenerator";
+import { drawSpriteSheetCharacter } from "../utils/SpriteRenderer";
 import { useAvatar } from "../contexts/AvatarsContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -83,6 +84,8 @@ export const Arena = () => {
   const [loadedImages, setLoadedImages] = useState<
     Map<string, HTMLImageElement>
   >(new Map());
+  const animeMaleSpriteRef = useRef<HTMLImageElement | null>(null);
+  const animeFemaleSpriteRef = useRef<HTMLImageElement | null>(null);
   const defaultAvatarRef = useRef<HTMLImageElement | null>(null);
 
   const [currentUser, setCurrentUser] = useState<any>({});
@@ -527,6 +530,20 @@ export const Arena = () => {
       defaultAvatarRef.current = img;
       setLoadedImages((prev) => new Map(prev).set("default", img));
     };
+
+    const maleImg = new Image();
+    maleImg.src = "/anime_male.png";
+    maleImg.onload = () => {
+      animeMaleSpriteRef.current = maleImg;
+      setLoadedImages((prev) => new Map(prev).set("anime_male", maleImg));
+    };
+
+    const femaleImg = new Image();
+    femaleImg.src = "/anime_female.png";
+    femaleImg.onload = () => {
+      animeFemaleSpriteRef.current = femaleImg;
+      setLoadedImages((prev) => new Map(prev).set("anime_female", femaleImg));
+    };
   }, []);
 
   useEffect(() => {
@@ -618,6 +635,7 @@ export const Arena = () => {
           const initialGridX = message.payload.spawn.x;
           const initialGridY = message.payload.spawn.y;
           setCurrentUser({
+            id: message.payload.id,
             userId: message.payload.userId,
             gridX: initialGridX,
             gridY: initialGridY,
@@ -627,20 +645,21 @@ export const Arena = () => {
             visualX: initialGridX * 50,
             visualY: initialGridY * 50,
           };
-          userAnimState.current.set(message.payload.userId, { moving: false, walkCycle: 0, direction: 'down' });
+          userAnimState.current.set(message.payload.id, { moving: false, walkCycle: 0, direction: 'down' });
           const userMap = new Map();
           message.payload.users.forEach((user: any) => {
-            userMap.set(user.userId, {
+            userMap.set(user.id, {
+              id: user.id,
               userId: user.userId,
               gridX: user.x,
               gridY: user.y,
             });
-            usersAnimationRef.current.set(user.userId, {
+            usersAnimationRef.current.set(user.id, {
               isMoving: false,
               visualX: user.x * 50,
               visualY: user.y * 50,
             });
-            userAnimState.current.set(user.userId, { moving: false, walkCycle: 0, direction: 'down' });
+            userAnimState.current.set(user.id, { moving: false, walkCycle: 0, direction: 'down' });
           });
           setUsers(userMap);
           const ongoingCalls = message.payload.ongoingCalls || [];
@@ -651,15 +670,16 @@ export const Arena = () => {
           });
           break;
         case "user-joined":
-          userAnimState.current.set(message.payload.userId, { moving: false, walkCycle: 0, direction: 'down' });
-          usersAnimationRef.current.set(message.payload.userId, {
+          userAnimState.current.set(message.payload.id, { moving: false, walkCycle: 0, direction: 'down' });
+          usersAnimationRef.current.set(message.payload.id, {
             isMoving: false,
             visualX: message.payload.x * 50,
             visualY: message.payload.y * 50,
           });
           setUsers((prev) => {
             const newUsers = new Map(prev);
-            newUsers.set(message.payload.userId, {
+            newUsers.set(message.payload.id, {
+              id: message.payload.id,
               userId: message.payload.userId,
               gridX: message.payload.x,
               gridY: message.payload.y,
@@ -714,21 +734,21 @@ export const Arena = () => {
           ]);
           break;
         case "movement":
-          const { userId, x, y } = message.payload;
-          if (userId === currentUser.userId) {
+          const { id, userId, x, y } = message.payload;
+          if (id === currentUser.id) {
             setCurrentUser((prev: any) => ({ ...prev, gridX: x, gridY: y }));
           } else {
             setUsers((prev) => {
               const newUsers = new Map(prev);
-              const user = newUsers.get(userId);
+              const user = newUsers.get(id);
               if (user) {
-                const animation = usersAnimationRef.current.get(userId) || {};
-                newUsers.set(userId, { ...user, gridX: x, gridY: y });
+                const animation = usersAnimationRef.current.get(id) || {};
+                newUsers.set(id, { ...user, gridX: x, gridY: y });
                 // We use simple linear interpolation for other users
                 animation.isMoving = true;
                 animation.targetX = x * 50;
                 animation.targetY = y * 50;
-                usersAnimationRef.current.set(userId, animation);
+                usersAnimationRef.current.set(id, animation);
               }
               return newUsers;
             });
@@ -737,7 +757,7 @@ export const Arena = () => {
         case "user-left":
           setUsers((prev) => {
             const newUsers = new Map(prev);
-            newUsers.delete(message.payload.userId);
+            newUsers.delete(message.payload.id);
             return newUsers;
           });
           if (message.payload.userId === remoteUserId) {
@@ -831,29 +851,6 @@ export const Arena = () => {
   const handleKeyUp = (e: React.KeyboardEvent) => {
     keysPressed.current.delete(e.key.toLowerCase());
   };
-
-  // --- ADDED MISSING FUNCTION HERE ---
-  const handleCanvasHover = (e: React.MouseEvent) => {
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-
-    let hovered = null;
-    users.forEach((user, userId) => {
-      const visualX = user.gridX * GRID_SIZE;
-      const visualY = user.gridY * GRID_SIZE;
-      const dist = Math.sqrt(
-        Math.pow(mouseX - visualX, 2) + Math.pow(mouseY - visualY, 2),
-      );
-      if (dist < AVATAR_SIZE / 2) {
-        hovered = userId;
-      }
-    });
-    setHoveredUser(hovered);
-  };
-  // ---------------------------------
 
   // --- Canvas Render ---
   useEffect(() => {
@@ -1007,10 +1004,17 @@ export const Arena = () => {
           ? loadedImages.get(avatarStr)
           : defaultAvatarRef.current;
         
-        const myState = userAnimState.current.get(currentUser.userId) || { moving: false, walkCycle: 0, direction: 'down' };
+        const myState = userAnimState.current.get(currentUser.id) || { moving: false, walkCycle: 0, direction: 'down' };
 
         if (avatarStr && avatarStr.startsWith("procedural:")) {
-          drawProceduralCharacter(ctx, currentVisualX, currentVisualY, avatarStr, AVATAR_SIZE, myState.walkCycle, myState.direction);
+          const isFemale = avatarStr.includes("female");
+          const spriteImg = isFemale ? animeFemaleSpriteRef.current : animeMaleSpriteRef.current;
+          
+          if (spriteImg) {
+            drawSpriteSheetCharacter(ctx, currentVisualX, currentVisualY, spriteImg, avatarStr, AVATAR_SIZE, myState.walkCycle, myState.direction);
+          } else {
+            drawProceduralCharacter(ctx, currentVisualX, currentVisualY, avatarStr, AVATAR_SIZE, myState.walkCycle, myState.direction);
+          }
         } else {
           // Fallback to DiceBear images if still used
           ctx.save();
@@ -1038,19 +1042,20 @@ export const Arena = () => {
       }
 
       // Draw Other Users
-      usersVisual.forEach((visual, userId) => {
-        const user = users.get(userId);
+      usersVisual.forEach((visual, id) => {
+        const user = users.get(id);
         if (!user) return;
-        const avatarStr = avatars.get(userId);
+        const username = user.userId;
+        const avatarStr = avatars.get(username);
         const image = avatarStr && !avatarStr.startsWith("procedural:")
           ? loadedImages.get(avatarStr)
           : defaultAvatarRef.current;
         
-        if (usersAnimationRef.current.get(userId)?.isMoving) {
-          const trail = movementTrails.current.get(userId) || [];
+        if (usersAnimationRef.current.get(id)?.isMoving) {
+          const trail = movementTrails.current.get(id) || [];
           trail.push({ x: visual.visualX, y: visual.visualY, opacity: 1 });
           if (trail.length > TRAIL_LENGTH) trail.shift();
-          movementTrails.current.set(userId, trail);
+          movementTrails.current.set(id, trail);
           ctx.globalCompositeOperation = "screen";
           trail.forEach((pos) => {
             ctx.fillStyle = `rgba(100, 200, 255, ${pos.opacity})`;
@@ -1062,10 +1067,17 @@ export const Arena = () => {
           ctx.globalCompositeOperation = "source-over";
         }
 
-        const otherState = userAnimState.current.get(userId) || { moving: false, walkCycle: 0, direction: 'down' };
+        const otherState = userAnimState.current.get(id) || { moving: false, walkCycle: 0, direction: 'down' };
 
         if (avatarStr && avatarStr.startsWith("procedural:")) {
-          drawProceduralCharacter(ctx, visual.visualX, visual.visualY, avatarStr, AVATAR_SIZE, otherState.walkCycle, otherState.direction);
+          const isFemale = avatarStr.includes("female");
+          const spriteImg = isFemale ? animeFemaleSpriteRef.current : animeMaleSpriteRef.current;
+          
+          if (spriteImg) {
+            drawSpriteSheetCharacter(ctx, visual.visualX, visual.visualY, spriteImg, avatarStr, AVATAR_SIZE, otherState.walkCycle, otherState.direction);
+          } else {
+            drawProceduralCharacter(ctx, visual.visualX, visual.visualY, avatarStr, AVATAR_SIZE, otherState.walkCycle, otherState.direction);
+          }
         } else {
           ctx.save();
           ctx.beginPath();
@@ -1074,7 +1086,7 @@ export const Arena = () => {
           if (image) ctx.drawImage(image, visual.visualX - AVATAR_SIZE / 2, visual.visualY - AVATAR_SIZE / 2, AVATAR_SIZE, AVATAR_SIZE);
           ctx.restore();
         }
-        if (hoveredUser === userId) {
+        if (hoveredUser === id) {
           ctx.strokeStyle = "#00ffd5";
           ctx.lineWidth = 2;
           ctx.beginPath();
@@ -1087,11 +1099,11 @@ export const Arena = () => {
           );
           ctx.stroke();
         }
-        ctx.fillStyle = hoveredUser === userId ? "#00ffd5" : "#a0e5ff";
+        ctx.fillStyle = hoveredUser === id ? "#00ffd5" : "#a0e5ff";
         ctx.font = '14px "Poppins", sans-serif';
         ctx.textAlign = "center";
         ctx.fillText(
-          userId,
+          username,
           visual.visualX,
           visual.visualY + AVATAR_SIZE / 2 + 25,
         );
