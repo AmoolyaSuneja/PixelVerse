@@ -543,7 +543,7 @@ export const Arena = () => {
       Array.from(avatars.entries()).forEach(([_userId, url]) => {
         if (!loadedImages.has(url)) {
           const img = new Image();
-          img.src = url;
+          img.src = url.startsWith("procedural:") ? generateProceduralDataURL(url) : url;
           loadPromises.push(
             new Promise((resolve) => {
               img.onload = () => resolve();
