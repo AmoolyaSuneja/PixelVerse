@@ -17,21 +17,7 @@ import {
   deleteDoc,
   getDoc,
 } from "firebase/firestore";
-import {
-  Video,
-  Mic,
-  MicOff,
-  VideoOff,
-  PhoneOff,
-  MonitorUp,
-  MonitorOff,
-  Circle,
-  Square,
-  Download,
-  ArrowLeftRight,
-  Maximize2,
-  Minimize2,
-} from "lucide-react";
+// Removed lucide-react per brutalist rules
 
 // --- Constants ---
 const GRID_SIZE = 50;
@@ -1148,27 +1134,25 @@ export const Arena = () => {
   return (
     <div
       ref={containerRef}
-      className="h-screen w-screen bg-[#0a0a0f] text-white overflow-hidden outline-none flex flex-col font-sans"
+      className="h-screen w-screen bg-[#E5E5E5] text-black overflow-hidden outline-none flex flex-col font-sans"
       onKeyDown={handleKeyDown}
       onKeyUp={handleKeyUp}
       tabIndex={0}
       autoFocus
     >
-      {/* Dynamic Background */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#1a1a2e] via-[#0a0a0f] to-[#05050a] pointer-events-none -z-10" />
       <div className="relative w-full h-full flex flex-col z-10 p-4 gap-4">
-        {/* Floating Header */}
-        <div className="flex justify-between items-center bg-white/5 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.5)]">
-          <h1 className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 tracking-tight">
+        {/* Flat Header */}
+        <div className="flex justify-between items-center bg-white border-4 border-black p-4 rounded-none">
+          <h1 className="text-3xl font-black text-black uppercase tracking-widest">
             Pixel Arena
           </h1>
           <div className="flex gap-4 items-center">
-            <div className="bg-black/40 px-5 py-2 rounded-xl text-sm font-medium tracking-wide text-cyan-100 border border-white/5">
-              <span className="opacity-50 mr-2">SPACE</span> {spaceId}
+            <div className="bg-gray-200 px-4 py-2 border-2 border-black text-sm font-bold uppercase text-black">
+              SPACE: {spaceId}
             </div>
             <button
               onClick={handleExitSpace}
-              className="px-6 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl transition-all duration-300 font-semibold"
+              className="px-6 py-2 bg-red-600 text-white font-black uppercase border-2 border-black hover:bg-red-700"
             >
               Disconnect
             </button>
@@ -1178,26 +1162,20 @@ export const Arena = () => {
         <div className="flex-1 flex gap-4 overflow-hidden relative">
           {/* LEFT PANEL: Chat */}
           <div className="w-80 flex flex-col gap-4">
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5 flex-1 flex flex-col shadow-2xl">
-              <h3 className="font-bold text-white/70 mb-4 text-sm tracking-widest uppercase">Global Chat</h3>
+            <div className="bg-white border-4 border-black rounded-none p-4 flex-1 flex flex-col">
+              <h3 className="font-black text-black mb-4 text-sm tracking-widest uppercase border-b-2 border-black pb-2">Global Chat</h3>
               <div
                 ref={globalMessagesContainerRef}
-                className="flex-1 overflow-y-auto mb-4 space-y-3 pr-2 scrollbar-hide"
+                className="flex-1 overflow-y-auto mb-4 space-y-2 pr-2"
               >
                 {globalMessages
                   .filter((m) => !blockedUsers.has(m.userId))
                   .map((msg, i) => (
-                    <div key={i} className="text-sm bg-black/20 p-3 rounded-xl border border-white/5 break-words">
-                      <span
-                        className={
-                          msg.userId === "SYSTEM"
-                            ? "text-yellow-400 font-bold"
-                            : "text-cyan-400 font-bold"
-                        }
-                      >
+                    <div key={i} className="text-sm bg-gray-100 p-2 border-2 border-black break-words rounded-none">
+                      <span className="font-black text-black uppercase">
                         {msg.userId}:
                       </span>{" "}
-                      <span className="text-gray-300 leading-relaxed">{msg.message}</span>
+                      <span className="text-black font-medium">{msg.message}</span>
                     </div>
                   ))}
               </div>
@@ -1209,19 +1187,19 @@ export const Arena = () => {
                   (sendGlobalMessage(globalMessageInput),
                   setGlobalMessageInput(""))
                 }
-                className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-cyan-500/50 transition-colors text-white placeholder-white/30"
-                placeholder="Type a message..."
+                className="w-full bg-white border-2 border-black p-2 text-sm font-bold text-black focus:outline-none placeholder-gray-500 rounded-none"
+                placeholder="TYPE A MESSAGE..."
                 disabled={isKicked}
               />
             </div>
 
             {activeChatUser && (
-              <div className="bg-gray-800 rounded-xl p-4 shadow-lg h-64 flex flex-col">
-                <div className="flex justify-between mb-2">
-                  <h3 className="font-bold text-purple-400">
+              <div className="bg-white border-4 border-black rounded-none p-4 h-64 flex flex-col">
+                <div className="flex justify-between mb-2 border-b-2 border-black pb-2">
+                  <h3 className="font-black text-black uppercase">
                     DM: {activeChatUser}
                   </h3>
-                  <button onClick={() => setActiveChatUser(null)}>✕</button>
+                  <button onClick={() => setActiveChatUser(null)} className="font-black">✕</button>
                 </div>
                 <div
                   ref={privateMessagesContainerRef}
@@ -1230,9 +1208,9 @@ export const Arena = () => {
                   {privateMessages.map((msg, i) => (
                     <div
                       key={i}
-                      className={`text-sm p-2 rounded ${msg.userId === currentUser.userId ? "bg-purple-900/30 text-right" : "bg-gray-700/50"}`}
+                      className={`text-sm p-2 border-2 border-black rounded-none ${msg.userId === currentUser.userId ? "bg-blue-200 text-right" : "bg-gray-200"}`}
                     >
-                      {msg.message}
+                      <span className="font-bold">{msg.message}</span>
                     </div>
                   ))}
                 </div>
@@ -1244,37 +1222,37 @@ export const Arena = () => {
                     (sendPrivateMessage(activeChatUser, privateMessageInput),
                     setPrivateMessageInput(""))
                   }
-                  className="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm"
-                  placeholder="Message..."
+                  className="w-full bg-white border-2 border-black p-2 text-sm font-bold text-black focus:outline-none placeholder-gray-500 rounded-none"
+                  placeholder="MESSAGE..."
                 />
               </div>
             )}
           </div>
 
           {/* MIDDLE: Canvas Game */}
-          <div className="flex-1 relative border border-white/10 rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] bg-black/50 backdrop-blur-sm">
+          <div className="flex-1 relative border-4 border-black bg-white rounded-none overflow-hidden">
             <div
               ref={scrollContainerRef}
-              className="w-full h-full overflow-auto scrollbar-hide cursor-crosshair"
+              className="w-full h-full overflow-auto cursor-crosshair bg-[#f0f0f0]"
               onMouseMove={handleCanvasHover}
             >
-              <canvas ref={canvasRef} width={2000} height={2000} />
+              <canvas ref={canvasRef} width={2000} height={2000} className="bg-transparent" />
             </div>
 
             {/* In-Call Overlay */}
             {callStatus === "in-call" && (
               <div
-                className={`absolute transition-all duration-300 ease-in-out z-50 flex flex-col gap-3 shadow-2xl
+                className={`absolute z-50 flex flex-col gap-3 bg-white border-4 border-black rounded-none p-4
                   ${
                     isExpanded
-                      ? "top-0 left-0 w-full h-full bg-gray-900 p-4 rounded-none" // Expanded Styles
-                      : "bottom-6 right-6 w-[480px] bg-slate-900/95 border border-slate-700 rounded-2xl p-4" // Minimized Styles
+                      ? "top-0 left-0 w-full h-full" 
+                      : "bottom-6 right-6 w-[480px]"
                   }
                 `}
               >
                 {/* Main Video Area */}
                 <div
-                  className={`relative overflow-hidden group bg-black rounded-xl ${
+                  className={`relative overflow-hidden group bg-gray-200 border-2 border-black rounded-none ${
                     isExpanded ? "flex-1 w-full" : "aspect-video"
                   }`}
                 >
@@ -1289,17 +1267,17 @@ export const Arena = () => {
                   />
 
                   {/* Label */}
-                  <div className="absolute top-4 left-4 bg-black/60 px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm">
-                    {isVideoSwapped ? "You" : remoteUserId}
+                  <div className="absolute top-2 left-2 bg-white border-2 border-black px-2 py-1 text-sm font-black uppercase text-black rounded-none">
+                    {isVideoSwapped ? "YOU" : remoteUserId}
                   </div>
 
-                  {/* PIP Video Area (Draggable conceptually, but absolute for now) */}
+                  {/* PIP Video Area */}
                   <div
                     onClick={(e) => {
                       e.stopPropagation();
                       setIsVideoSwapped(!isVideoSwapped);
                     }}
-                    className={`absolute cursor-pointer hover:border-indigo-500 transition-all bg-slate-800 rounded-lg overflow-hidden border border-slate-600 shadow-xl z-10
+                    className={`absolute cursor-pointer bg-white border-2 border-black rounded-none overflow-hidden z-10
                       ${
                         isExpanded
                           ? "bottom-4 right-4 w-64 aspect-video"
@@ -1323,88 +1301,69 @@ export const Arena = () => {
 
                 {/* Controls Bar */}
                 <div
-                  className={`flex justify-center gap-2 ${isExpanded ? "py-2" : ""}`}
+                  className={`flex flex-wrap justify-center gap-2 ${isExpanded ? "py-2" : ""}`}
                 >
                   <button
                     onClick={toggleMic}
-                    className={`p-3 rounded-full transition ${
+                    className={`px-3 py-2 font-black uppercase border-2 border-black rounded-none text-xs ${
                       micActive
-                        ? "bg-slate-700 hover:bg-slate-600"
-                        : "bg-red-500/20 text-red-500"
+                        ? "bg-white text-black hover:bg-gray-200"
+                        : "bg-red-600 text-white"
                     }`}
-                    title="Toggle Mic"
                   >
-                    {micActive ? <Mic size={20} /> : <MicOff size={20} />}
+                    {micActive ? "[MIC ON]" : "[MIC OFF]"}
                   </button>
                   <button
                     onClick={toggleVideo}
-                    className={`p-3 rounded-full transition ${
+                    className={`px-3 py-2 font-black uppercase border-2 border-black rounded-none text-xs ${
                       videoActive
-                        ? "bg-slate-700 hover:bg-slate-600"
-                        : "bg-red-500/20 text-red-500"
+                        ? "bg-white text-black hover:bg-gray-200"
+                        : "bg-red-600 text-white"
                     }`}
-                    title="Toggle Camera"
                   >
-                    {videoActive ? <Video size={20} /> : <VideoOff size={20} />}
+                    {videoActive ? "[CAM ON]" : "[CAM OFF]"}
                   </button>
                   <button
                     onClick={toggleScreenShare}
-                    className={`p-3 rounded-full transition ${
+                    className={`px-3 py-2 font-black uppercase border-2 border-black rounded-none text-xs ${
                       screenShareActive
-                        ? "bg-green-500/20 text-green-500"
-                        : "bg-slate-700 hover:bg-slate-600"
+                        ? "bg-green-500 text-black"
+                        : "bg-white text-black hover:bg-gray-200"
                     }`}
-                    title="Share Screen"
                   >
-                    {screenShareActive ? (
-                      <MonitorOff size={20} />
-                    ) : (
-                      <MonitorUp size={20} />
-                    )}
+                    {screenShareActive ? "[STOP SHARE]" : "[SHARE SCR]"}
                   </button>
 
-                  {/* Video Swap Button */}
                   <button
                     onClick={() => setIsVideoSwapped(!isVideoSwapped)}
-                    className="p-3 rounded-full bg-slate-700 hover:bg-slate-600"
-                    title="Swap Views"
+                    className="px-3 py-2 font-black uppercase border-2 border-black rounded-none text-xs bg-white text-black hover:bg-gray-200"
                   >
-                    <ArrowLeftRight size={20} />
+                    [SWAP]
                   </button>
 
-                  {/* Recording Button */}
                   <button
                     onClick={isRecording ? stopRecording : startRecording}
-                    className={`p-3 rounded-full transition ${
+                    className={`px-3 py-2 font-black uppercase border-2 border-black rounded-none text-xs ${
                       isRecording
-                        ? "bg-red-600 text-white animate-pulse"
-                        : "bg-slate-700 hover:bg-slate-600"
+                        ? "bg-red-600 text-white"
+                        : "bg-white text-black hover:bg-gray-200"
                     }`}
-                    title="Record Call"
                   >
-                    {isRecording ? <Square size={20} /> : <Circle size={20} />}
+                    {isRecording ? "[STOP REC]" : "[RECORD]"}
                   </button>
 
-                  {/* Maximize/Minimize Button */}
                   <button
                     onClick={() => setIsExpanded(!isExpanded)}
-                    className="p-3 rounded-full bg-slate-700 hover:bg-slate-600 text-blue-400"
-                    title={isExpanded ? "Minimize" : "Maximize"}
+                    className="px-3 py-2 font-black uppercase border-2 border-black rounded-none text-xs bg-white text-black hover:bg-gray-200"
                   >
-                    {isExpanded ? (
-                      <Minimize2 size={20} />
-                    ) : (
-                      <Maximize2 size={20} />
-                    )}
+                    {isExpanded ? "[MIN]" : "[MAX]"}
                   </button>
 
-                  {/* End Call Button */}
                   <button
                     onClick={handleEndCall}
-                    className="p-3 rounded-full bg-red-600 hover:bg-red-700 text-white"
-                    title="End Call"
+                    className="px-3 py-2 font-black uppercase border-2 border-black rounded-none text-xs bg-red-600 text-white hover:bg-red-700"
                   >
-                    <PhoneOff size={20} />
+                    [END CALL]
                   </button>
                 </div>
               </div>
@@ -1412,23 +1371,23 @@ export const Arena = () => {
 
             {/* Recording Download Popup */}
             {downloadLink && (
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-slate-800 p-4 rounded-xl shadow-xl flex items-center gap-4 z-50 animate-in slide-in-from-top-4">
-                <div className="bg-green-500/20 text-green-500 p-2 rounded-lg">
-                  <Download size={20} />
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white border-4 border-black p-4 rounded-none flex items-center gap-4 z-50">
+                <div className="bg-green-200 border-2 border-black font-black p-2 rounded-none text-xs">
+                  [SAVED]
                 </div>
                 <div>
-                  <p className="text-sm font-bold">Recording Saved</p>
+                  <p className="text-sm font-black uppercase">Recording Saved</p>
                   <a
                     href={downloadLink}
                     download="recording.webm"
-                    className="text-xs text-blue-400 hover:underline"
+                    className="text-xs text-blue-700 font-bold hover:underline uppercase"
                   >
-                    Click to Download
+                    Download File
                   </a>
                 </div>
                 <button
                   onClick={() => setDownloadLink(null)}
-                  className="text-gray-500 hover:text-white"
+                  className="font-black text-black ml-4 hover:bg-gray-200 p-1 border-2 border-transparent hover:border-black rounded-none"
                 >
                   ✕
                 </button>
@@ -1437,26 +1396,26 @@ export const Arena = () => {
 
             {/* Incoming Call Modal */}
             {callStatus === "incoming" && (
-              <div className="absolute top-10 left-1/2 transform -translate-x-1/2 bg-slate-800/95 backdrop-blur border border-slate-600 p-6 rounded-2xl shadow-2xl z-50 animate-bounce">
+              <div className="absolute top-10 left-1/2 transform -translate-x-1/2 bg-white border-4 border-black p-6 rounded-none z-50">
                 <div className="text-center mb-6">
-                  <div className="w-16 h-16 bg-indigo-500 rounded-full mx-auto flex items-center justify-center mb-2 animate-pulse">
-                    <Video size={32} />
+                  <div className="w-16 h-16 bg-blue-600 border-2 border-black mx-auto flex items-center justify-center mb-4 text-white font-black text-sm">
+                    [CALL]
                   </div>
-                  <h3 className="text-xl font-bold">Incoming Call</h3>
-                  <p className="text-slate-400 text-sm">from {remoteUserId}</p>
+                  <h3 className="text-xl font-black uppercase tracking-widest text-black">Incoming Call</h3>
+                  <p className="text-black font-bold text-sm uppercase">FROM: {remoteUserId}</p>
                 </div>
                 <div className="flex gap-4">
                   <button
                     onClick={acceptCall}
-                    className="flex-1 bg-green-600 hover:bg-green-700 py-3 px-6 rounded-xl font-bold flex items-center gap-2"
+                    className="flex-1 bg-green-500 hover:bg-green-600 border-2 border-black py-3 px-6 rounded-none font-black text-black uppercase"
                   >
-                    <Video size={18} /> Accept
+                    [ACCEPT]
                   </button>
                   <button
                     onClick={declineCall}
-                    className="flex-1 bg-red-600 hover:bg-red-700 py-3 px-6 rounded-xl font-bold flex items-center gap-2"
+                    className="flex-1 bg-red-600 hover:bg-red-700 border-2 border-black py-3 px-6 rounded-none font-black text-white uppercase"
                   >
-                    <PhoneOff size={18} /> Decline
+                    [DECLINE]
                   </button>
                 </div>
               </div>
@@ -1464,29 +1423,29 @@ export const Arena = () => {
           </div>
 
           {/* RIGHT PANEL: Nearby Users */}
-          <div className="w-72 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl overflow-y-auto scrollbar-hide flex flex-col">
-            <h3 className="font-bold text-white/70 mb-4 text-sm tracking-widest uppercase flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+          <div className="w-72 bg-white border-4 border-black rounded-none p-4 flex flex-col">
+            <h3 className="font-black text-black mb-4 text-sm tracking-widest uppercase flex items-center gap-2 border-b-2 border-black pb-2">
+              <span className="w-3 h-3 bg-green-500 border-2 border-black inline-block"></span>
               Nearby Players
             </h3>
             {nearbyUsers.size === 0 && (
-              <div className="flex-1 flex flex-col items-center justify-center opacity-30 text-center p-4">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mb-2"><circle cx="12" cy="12" r="10"></circle><path d="M16 16s-1.5-2-4-2-4 2-4 2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
-                <p className="text-sm">It's quiet... too quiet.</p>
+              <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
+                <div className="w-8 h-8 border-4 border-black rounded-none mb-2 bg-gray-200 flex items-center justify-center font-black">?</div>
+                <p className="text-sm font-bold uppercase text-black">Nobody here.</p>
               </div>
             )}
 
-            <div className="space-y-3">
+            <div className="space-y-3 overflow-y-auto">
               {Array.from(nearbyUsers).map((userId) => (
                 <div
                   key={userId}
-                  className="bg-black/30 border border-white/5 p-4 rounded-xl flex flex-col gap-3 transition-transform hover:scale-[1.02]"
+                  className="bg-gray-100 border-2 border-black p-3 rounded-none flex flex-col gap-3"
                 >
                   <div className="flex justify-between items-center">
-                    <span className="font-bold text-cyan-50">{userId}</span>
+                    <span className="font-black text-black uppercase truncate">{userId}</span>
                     {userCallStatus.get(userId) && (
-                      <span className="text-[10px] uppercase font-bold bg-rose-500/20 text-rose-400 px-2 py-1 rounded-full border border-rose-500/20">
-                        In Call
+                      <span className="text-[10px] uppercase font-black bg-yellow-300 text-black px-1 border-2 border-black">
+                        BUSY
                       </span>
                     )}
                   </div>
@@ -1498,54 +1457,29 @@ export const Arena = () => {
                       disabled={
                         callStatus !== "idle" || !!userCallStatus.get(userId)
                       }
-                      className={`flex-1 py-1.5 rounded text-xs font-bold flex items-center justify-center gap-1 ${
+                      className={`flex-1 py-1 rounded-none text-[10px] font-black uppercase border-2 border-black ${
                         callStatus !== "idle"
-                          ? "bg-gray-600 text-gray-400"
-                          : "bg-green-600 hover:bg-green-700"
+                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          : "bg-green-500 text-black hover:bg-green-600"
                       }`}
                     >
-                      <Video size={14} /> Call
+                      [CALL]
                     </button>
 
                     {/* Chat Button */}
                     <button
                       onClick={() => setActiveChatUser(userId)}
-                      className="bg-blue-600 hover:bg-blue-700 p-1.5 rounded text-white"
+                      className="bg-blue-500 hover:bg-blue-600 text-black border-2 border-black px-2 py-1 rounded-none text-[10px] font-black uppercase"
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                      </svg>
+                      [MSG]
                     </button>
 
                     {/* Block Button */}
                     <button
                       onClick={() => toggleBlockUser(userId)}
-                      className={`p-1.5 rounded ${blockedUsers.has(userId) ? "bg-red-600 text-white" : "bg-gray-600 text-gray-300 hover:bg-gray-500"}`}
+                      className={`px-2 py-1 rounded-none text-[10px] font-black uppercase border-2 border-black ${blockedUsers.has(userId) ? "bg-red-600 text-white" : "bg-gray-300 text-black hover:bg-gray-400"}`}
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
-                      </svg>
+                      [BLK]
                     </button>
                   </div>
                 </div>
