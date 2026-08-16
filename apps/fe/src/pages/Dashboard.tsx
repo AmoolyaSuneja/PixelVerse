@@ -16,7 +16,7 @@ export default function Dashboard() {
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [spaceIdInput, setSpaceIdInput] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const { token, logout } = useAuth();
+  const { user, token, logout } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
