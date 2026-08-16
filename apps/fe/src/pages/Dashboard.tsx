@@ -16,7 +16,7 @@ export default function Dashboard() {
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [spaceIdInput, setSpaceIdInput] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const { user, token, logout } = useAuth();
+  const { token, logout } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -66,7 +66,7 @@ export default function Dashboard() {
               DASH<br/>BOARD
             </h1>
             <p className="mt-4 text-xl font-black text-black uppercase bg-[#1E90FF] text-white border-[4px] border-black inline-block px-4 py-2 transform -rotate-1">
-              WELCOME BACK, {user?.username}
+              WELCOME BACK, TRAVELER
             </p>
           </div>
           <button
