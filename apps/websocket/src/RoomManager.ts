@@ -74,7 +74,7 @@ export class RoomManager {
 
   public endCall(spaceId: string, user1: string, user2: string) {
     const roomCalls = this.ongoingCalls.get(spaceId);
-    if (roomCalls) {
+    if (roomCalls && roomCalls.has(user1)) {
       roomCalls.delete(user1);
       roomCalls.delete(user2);
       this.broadcastToAll(

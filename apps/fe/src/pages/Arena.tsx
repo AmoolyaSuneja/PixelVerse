@@ -250,11 +250,7 @@ export const Arena = () => {
     stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
     pc.ontrack = (event) => {
-      event.streams[0].getTracks().forEach((track) => {
-        if (remoteStream.current) {
-          remoteStream.current.addTrack(track);
-        }
-      });
+      remoteStream.current = event.streams[0];
       if (mainVideoRef.current && !isVideoSwapped) {
         mainVideoRef.current.srcObject = remoteStream.current;
       } else if (pipVideoRef.current && isVideoSwapped) {
@@ -388,14 +384,17 @@ export const Arena = () => {
   }, [incomingCallDocId]);
 
   // --- Action: End Call ---
-  const handleEndCall = useCallback(async () => {
+  const handleEndCall = useCallback(async (skipNotify?: any) => {
+    const shouldSkipNotify = skipNotify === true;
     if (localStream.current) {
       localStream.current.getTracks().forEach((t) => t.stop());
+      localStream.current = null;
     }
     if (peerConnection.current) {
       peerConnection.current.close();
+      peerConnection.current = null;
     }
-    if (remoteUserId) {
+    if (remoteUserId && !shouldSkipNotify) {
       wsRef.current?.send(
         JSON.stringify({
           type: "call-ended",
@@ -762,7 +761,7 @@ export const Arena = () => {
             return newUsers;
           });
           if (message.payload.userId === remoteUserId) {
-            handleEndCall();
+            handleEndCall(true);
           }
           break;
         case "call-started":
@@ -779,6 +778,13 @@ export const Arena = () => {
             newMap.set(message.payload.user2, null);
             return newMap;
           });
+          if (
+            (message.payload.user1 === currentUser?.userId ||
+             message.payload.user2 === currentUser?.userId) &&
+             remoteUserId !== null
+          ) {
+            handleEndCall(true);
+          }
           break;
         case "movement-rejected":
           setCurrentUser((prev: any) => ({
