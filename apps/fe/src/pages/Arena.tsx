@@ -1134,20 +1134,21 @@ export const Arena = () => {
   return (
     <div
       ref={containerRef}
-      className="h-screen w-screen bg-[#E5E5E5] text-black overflow-hidden outline-none flex flex-col font-sans"
+      className="h-screen w-screen bg-[#FDFBF7] text-black overflow-hidden outline-none flex flex-col font-sans"
       onKeyDown={handleKeyDown}
       onKeyUp={handleKeyUp}
       tabIndex={0}
       autoFocus
+      data-lenis-prevent
     >
       <div className="relative w-full h-full flex flex-col z-10 p-4 gap-4">
         {/* Flat Header */}
-        <div className="flex justify-between items-center bg-white border-4 border-black p-4 rounded-none">
-          <h1 className="text-3xl font-black text-black uppercase tracking-widest">
+        <div className="flex justify-between items-center bg-[#FFD700] border-[6px] border-black p-4 rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+          <h1 className="text-4xl font-black text-black uppercase tracking-tighter">
             Pixel Arena
           </h1>
           <div className="flex gap-4 items-center">
-            <div className="bg-gray-200 px-4 py-2 border-2 border-black text-sm font-bold uppercase text-black">
+            <div className="bg-white px-4 py-2 border-[4px] border-black text-sm font-black uppercase text-black">
               SPACE: {spaceId}
             </div>
             <button
@@ -1161,9 +1162,9 @@ export const Arena = () => {
 
         <div className="flex-1 flex gap-4 overflow-hidden relative">
           {/* LEFT PANEL: Chat */}
-          <div className="w-80 flex flex-col gap-4">
-            <div className="bg-white border-4 border-black rounded-none p-4 flex-1 flex flex-col">
-              <h3 className="font-black text-black mb-4 text-sm tracking-widest uppercase border-b-2 border-black pb-2">Global Chat</h3>
+          <div className="w-80 flex flex-col gap-4 z-10">
+            <div className="bg-[#1E90FF] border-[6px] border-black rounded-none p-4 flex-1 flex flex-col shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+              <h3 className="font-black text-white mb-4 text-xl tracking-tighter uppercase border-b-[4px] border-black pb-2">Global Chat</h3>
               <div
                 ref={globalMessagesContainerRef}
                 className="flex-1 overflow-y-auto mb-4 space-y-2 pr-2"
@@ -1171,7 +1172,7 @@ export const Arena = () => {
                 {globalMessages
                   .filter((m) => !blockedUsers.has(m.userId))
                   .map((msg, i) => (
-                    <div key={i} className="text-sm bg-gray-100 p-2 border-2 border-black break-words rounded-none">
+                    <div key={i} className="text-sm bg-white p-3 border-[4px] border-black break-words rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                       <span className="font-black text-black uppercase">
                         {msg.userId}:
                       </span>{" "}
@@ -1187,19 +1188,19 @@ export const Arena = () => {
                   (sendGlobalMessage(globalMessageInput),
                   setGlobalMessageInput(""))
                 }
-                className="w-full bg-white border-2 border-black p-2 text-sm font-bold text-black focus:outline-none placeholder-gray-500 rounded-none"
+                className="w-full bg-[#FDFBF7] border-[4px] border-black p-4 text-xl font-black text-black focus:outline-none placeholder-gray-500 rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                 placeholder="TYPE A MESSAGE..."
                 disabled={isKicked}
               />
             </div>
 
             {activeChatUser && (
-              <div className="bg-white border-4 border-black rounded-none p-4 h-64 flex flex-col">
-                <div className="flex justify-between mb-2 border-b-2 border-black pb-2">
-                  <h3 className="font-black text-black uppercase">
+              <div className="bg-[#FF00FF] border-[6px] border-black rounded-none p-4 h-64 flex flex-col shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+                <div className="flex justify-between mb-2 border-b-[4px] border-black pb-2">
+                  <h3 className="font-black text-white text-xl tracking-tighter uppercase">
                     DM: {activeChatUser}
                   </h3>
-                  <button onClick={() => setActiveChatUser(null)} className="font-black">✕</button>
+                  <button onClick={() => setActiveChatUser(null)} className="font-black text-white text-2xl hover:text-black">✕</button>
                 </div>
                 <div
                   ref={privateMessagesContainerRef}
@@ -1208,7 +1209,7 @@ export const Arena = () => {
                   {privateMessages.map((msg, i) => (
                     <div
                       key={i}
-                      className={`text-sm p-2 border-2 border-black rounded-none ${msg.userId === currentUser.userId ? "bg-blue-200 text-right" : "bg-gray-200"}`}
+                      className={`text-sm p-3 border-[4px] border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${msg.userId === currentUser.userId ? "bg-[#FFD700] text-black text-right" : "bg-white text-black"}`}
                     >
                       <span className="font-bold">{msg.message}</span>
                     </div>
@@ -1222,7 +1223,7 @@ export const Arena = () => {
                     (sendPrivateMessage(activeChatUser, privateMessageInput),
                     setPrivateMessageInput(""))
                   }
-                  className="w-full bg-white border-2 border-black p-2 text-sm font-bold text-black focus:outline-none placeholder-gray-500 rounded-none"
+                  className="w-full bg-[#FDFBF7] border-[4px] border-black p-3 text-lg font-black text-black focus:outline-none placeholder-gray-500 rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                   placeholder="MESSAGE..."
                 />
               </div>
@@ -1230,7 +1231,7 @@ export const Arena = () => {
           </div>
 
           {/* MIDDLE: Canvas Game */}
-          <div className="flex-1 relative border-4 border-black bg-white rounded-none overflow-hidden">
+          <div className="flex-1 relative border-[6px] border-black bg-white rounded-none overflow-hidden shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] z-0">
             <div
               ref={scrollContainerRef}
               className="w-full h-full overflow-auto cursor-crosshair bg-[#f0f0f0]"
@@ -1423,64 +1424,66 @@ export const Arena = () => {
           </div>
 
           {/* RIGHT PANEL: Nearby Users */}
-          <div className="w-72 bg-white border-4 border-black rounded-none p-4 flex flex-col">
-            <h3 className="font-black text-black mb-4 text-sm tracking-widest uppercase flex items-center gap-2 border-b-2 border-black pb-2">
-              <span className="w-3 h-3 bg-green-500 border-2 border-black inline-block"></span>
+          <div className="w-72 bg-[#FF4500] border-[6px] border-black rounded-none p-4 flex flex-col shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] z-10">
+            <h3 className="font-black text-white mb-4 text-xl tracking-tighter uppercase flex items-center gap-2 border-b-[4px] border-black pb-2">
+              <span className="w-4 h-4 bg-[#32CD32] border-[4px] border-black inline-block"></span>
               Nearby Players
             </h3>
             {nearbyUsers.size === 0 && (
-              <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
-                <div className="w-8 h-8 border-4 border-black rounded-none mb-2 bg-gray-200 flex items-center justify-center font-black">?</div>
-                <p className="text-sm font-bold uppercase text-black">Nobody here.</p>
+              <div className="flex-1 flex flex-col items-center justify-center text-center p-4 bg-white border-[4px] border-black mt-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <div className="w-12 h-12 border-[4px] border-black rounded-none mb-2 bg-[#FFD700] flex items-center justify-center font-black text-2xl">?</div>
+                <p className="text-xl font-black uppercase text-black tracking-tighter">NOBODY HERE</p>
               </div>
             )}
 
-            <div className="space-y-3 overflow-y-auto">
+            <div className="space-y-4 overflow-y-auto mt-2">
               {Array.from(nearbyUsers).map((userId) => (
                 <div
                   key={userId}
-                  className="bg-gray-100 border-2 border-black p-3 rounded-none flex flex-col gap-3"
+                  className="bg-white border-[4px] border-black p-3 rounded-none flex flex-col gap-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                 >
-                  <div className="flex justify-between items-center">
-                    <span className="font-black text-black uppercase truncate">{userId}</span>
+                  <div className="flex justify-between items-center border-b-[4px] border-black pb-2">
+                    <span className="font-black text-black text-lg uppercase truncate">{userId}</span>
                     {userCallStatus.get(userId) && (
-                      <span className="text-[10px] uppercase font-black bg-yellow-300 text-black px-1 border-2 border-black">
+                      <span className="text-xs uppercase font-black bg-[#FFD700] text-black px-2 py-1 border-[4px] border-black">
                         BUSY
                       </span>
                     )}
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2">
                     {/* Call Button */}
                     <button
                       onClick={() => handleCallUser(userId)}
                       disabled={
                         callStatus !== "idle" || !!userCallStatus.get(userId)
                       }
-                      className={`flex-1 py-1 rounded-none text-[10px] font-black uppercase border-2 border-black ${
+                      className={`w-full py-2 rounded-none text-sm font-black uppercase border-[4px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${
                         callStatus !== "idle"
                           ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                          : "bg-green-500 text-black hover:bg-green-600"
+                          : "bg-[#32CD32] text-black hover:bg-black hover:text-white"
                       }`}
                     >
                       [CALL]
                     </button>
 
-                    {/* Chat Button */}
-                    <button
-                      onClick={() => setActiveChatUser(userId)}
-                      className="bg-blue-500 hover:bg-blue-600 text-black border-2 border-black px-2 py-1 rounded-none text-[10px] font-black uppercase"
-                    >
-                      [MSG]
-                    </button>
+                    <div className="flex gap-2">
+                      {/* Chat Button */}
+                      <button
+                        onClick={() => setActiveChatUser(userId)}
+                        className="flex-1 bg-[#1E90FF] hover:bg-black hover:text-white text-black border-[4px] border-black px-2 py-2 rounded-none text-sm font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                      >
+                        [MSG]
+                      </button>
 
-                    {/* Block Button */}
-                    <button
-                      onClick={() => toggleBlockUser(userId)}
-                      className={`px-2 py-1 rounded-none text-[10px] font-black uppercase border-2 border-black ${blockedUsers.has(userId) ? "bg-red-600 text-white" : "bg-gray-300 text-black hover:bg-gray-400"}`}
-                    >
-                      [BLK]
-                    </button>
+                      {/* Block Button */}
+                      <button
+                        onClick={() => toggleBlockUser(userId)}
+                        className={`flex-1 px-2 py-2 rounded-none text-sm font-black uppercase border-[4px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${blockedUsers.has(userId) ? "bg-black text-white" : "bg-white text-black hover:bg-[#FF4500]"}`}
+                      >
+                        [BLK]
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
