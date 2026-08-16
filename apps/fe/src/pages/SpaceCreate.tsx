@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import axios from "axios";
-import { BeatLoader } from "react-spinners";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8080";
 
@@ -30,27 +29,27 @@ export default function CreateSpace() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-indigo-900 to-purple-800 flex items-center justify-center p-4">
-      <div className="bg-white bg-opacity-10 rounded-2xl p-8 max-w-md w-full">
-        <h1 className="text-3xl font-bold text-black mb-8">Create New Space</h1>
+    <div className="min-h-screen bg-[#E5E5E5] flex items-center justify-center p-4 font-sans">
+      <div className="bg-white border-4 border-black rounded-none p-8 max-w-md w-full">
+        <h1 className="text-3xl font-black text-black mb-8 uppercase text-center border-b-4 border-black pb-4">Create New Space</h1>
 
         <div className="space-y-6">
           <div>
-            <label className="block text-black mb-2">Space Name</label>
+            <label className="block text-black mb-2 font-bold uppercase tracking-wider">Space Name</label>
             <input
               type="text"
-              className="w-full bg-white bg-opacity-20 rounded-lg px-4 py-2 text-black"
+              className="w-full bg-white border-2 border-black rounded-none px-4 py-3 text-black font-bold focus:outline-none"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
           </div>
 
           <div>
-            <label className="block text-black mb-2">
-              Dimensions (Width x Height)
+            <label className="block text-black mb-2 font-bold uppercase tracking-wider">
+              Dimensions
             </label>
             <select
-              className="w-full bg-white bg-opacity-20 rounded-lg px-4 py-2 text-black"
+              className="w-full bg-white border-2 border-black rounded-none px-4 py-3 text-black font-bold focus:outline-none appearance-none cursor-pointer"
               value={dimensions}
               onChange={(e) => setDimensions(e.target.value)}
             >
@@ -63,13 +62,9 @@ export default function CreateSpace() {
           <button
             onClick={handleCreate}
             disabled={isCreating}
-            className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg text-black font-semibold hover:from-purple-600 hover:to-pink-600 transition-all"
+            className="w-full py-4 bg-yellow-400 border-2 border-black rounded-none text-black font-black uppercase hover:bg-yellow-500 mt-8"
           >
-            {isCreating ? (
-              <BeatLoader color="#ffffff" size={8} />
-            ) : (
-              "Create Space"
-            )}
+            {isCreating ? "CREATING..." : "CREATE SPACE"}
           </button>
         </div>
       </div>
