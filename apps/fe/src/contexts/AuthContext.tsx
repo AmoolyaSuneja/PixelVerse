@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const initializeAuth = () => {
-      const storedToken = localStorage.getItem("token");
+      const storedToken = sessionStorage.getItem("token");
       if (storedToken) {
         try {
           const decoded = jwt.decode(storedToken) as {
@@ -47,7 +47,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             throw new Error("Invalid token");
           }
         } catch (error) {
-          localStorage.removeItem("token");
+          sessionStorage.removeItem("token");
           setUser(null);
           setToken(null);
         }
@@ -72,7 +72,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error(data.message || "Login failed");
       }
 
-      localStorage.setItem("token", data.token);
+      sessionStorage.setItem("token", data.token);
       const decoded = jwt.decode(data.token) as {
         userId: string;
         role: "User" | "Admin";
@@ -111,7 +111,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
+    sessionStorage.removeItem("token");
     setUser(null);
     setToken(null);
   };
