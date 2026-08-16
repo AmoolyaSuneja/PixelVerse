@@ -33,28 +33,31 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#E5E5E5] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans">
-      {error && <div className="text-red-700 bg-red-100 border-2 border-red-700 p-2 font-bold mb-4">{error}</div>}
-      <div className="max-w-md w-full space-y-8 bg-white border-4 border-black p-8 rounded-none">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-6xl font-black text-black uppercase tracking-tight">
+    <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans relative overflow-hidden">
+      {/* Background Decor */}
+      <div className="absolute top-0 left-0 w-1/2 h-full bg-[#1E90FF] border-r-8 border-black z-0"></div>
+      <div className="absolute top-10 right-10 w-32 h-32 bg-[#FFD700] border-[6px] border-black rounded-full z-0"></div>
+      <div className="absolute bottom-10 left-10 w-48 h-48 bg-[#FF4500] border-[6px] border-black z-0 rotate-12"></div>
+      
+      {error && <div className="absolute top-4 z-50 text-black bg-[#FF4500] border-4 border-black p-4 font-black uppercase text-xl">{error}</div>}
+      
+      <div className="relative z-10 max-w-md w-full bg-white border-[6px] border-black p-10 rounded-none shadow-[16px_16px_0px_0px_rgba(0,0,0,1)]">
+        <div className="text-center mb-10 border-b-[6px] border-black pb-6">
+          <h1 className="text-5xl md:text-6xl font-black text-black uppercase tracking-tighter">
             Pixelverse
           </h1>
-          <p className="mt-2 text-sm text-black font-bold uppercase">
-            Your Gateway to Infinite Worlds
+          <p className="mt-4 text-md text-black font-black uppercase bg-[#FFD700] border-2 border-black inline-block px-2 py-1 transform -rotate-2">
+            Gateway to Infinite Worlds
           </p>
         </div>
-        <div className="text-center border-t-2 border-b-2 border-black py-4 mb-4">
-          <h2 className="text-xl font-black text-black uppercase">
-            {isLogin ? "Welcome Back Traveler!" : "Begin Your Journey"}
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-black text-black uppercase">
+            {isLogin ? "Welcome Back!" : "Begin Journey"}
           </h2>
-          <p className="mt-2 text-sm text-black font-bold">
-            {isLogin ? "Continue your adventure" : "Create your new identity"}
-          </p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
+        <form className="space-y-6" onSubmit={handleSubmit}>
+          <div className="space-y-6">
             <div>
               <label htmlFor="username" className="sr-only">
                 Username
@@ -64,7 +67,7 @@ export default function AuthPage() {
                 name="username"
                 type="text"
                 required
-                className="rounded-none appearance-none block w-full px-4 py-3 bg-white border-2 border-black text-black placeholder-gray-500 focus:outline-none focus:ring-0 focus:border-black sm:text-sm font-bold"
+                className="rounded-none block w-full px-4 py-4 bg-[#FDFBF7] border-[4px] border-black text-black placeholder-gray-500 focus:outline-none focus:bg-[#1E90FF] focus:text-white sm:text-lg font-black uppercase transition-colors"
                 placeholder="USERNAME"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -80,7 +83,7 @@ export default function AuthPage() {
                 name="password"
                 type="password"
                 required
-                className="rounded-none appearance-none block w-full px-4 py-3 bg-white border-2 border-black text-black placeholder-gray-500 focus:outline-none focus:ring-0 focus:border-black sm:text-sm font-bold"
+                className="rounded-none block w-full px-4 py-4 bg-[#FDFBF7] border-[4px] border-black text-black placeholder-gray-500 focus:outline-none focus:bg-[#FF4500] focus:text-white sm:text-lg font-black uppercase transition-colors"
                 placeholder="PASSWORD"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -91,10 +94,10 @@ export default function AuthPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full flex justify-center py-3 px-4 border-2 border-black text-sm font-black rounded-none text-white bg-blue-600 hover:bg-blue-700 focus:outline-none uppercase"
+            className="w-full flex justify-center py-4 px-4 border-[4px] border-black text-xl font-black rounded-none text-black bg-[#FFD700] hover:bg-black hover:text-white focus:outline-none uppercase transition-colors"
           >
             {isSubmitting ? (
-              <span>LOADING...</span>
+              <span>WAIT...</span>
             ) : isLogin ? (
               "SIGN IN"
             ) : (
@@ -103,10 +106,10 @@ export default function AuthPage() {
           </button>
         </form>
 
-        <div className="text-center mt-6">
+        <div className="text-center mt-8">
           <button
             onClick={() => setIsLogin(!isLogin)}
-            className="text-sm font-bold text-black hover:underline uppercase"
+            className="text-sm font-black text-black hover:bg-black hover:text-white px-2 py-1 uppercase border-2 border-transparent hover:border-black transition-colors"
           >
             {isLogin
               ? "DON'T HAVE AN ACCOUNT? SIGN UP"
