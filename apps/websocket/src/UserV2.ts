@@ -195,7 +195,7 @@ export class User {
         case "chat-message":
           const message = parsedData.payload.message;
           if (parsedData.payload.isGlobal) {
-            const containsProfanity = bannedWords.some((word) =>
+            const containsProfanity = message && bannedWords.some((word) =>
               message.toLowerCase().includes(word.toLowerCase())
             );
 
@@ -265,8 +265,8 @@ export class User {
             Math.pow(this.x - moveX, 2) + Math.pow(this.y - moveY, 2)
           );
           
-          // Allow up to 50 units of distance per network tick to prevent teleporting
-          if (distance <= 50) {
+          // Allow up to 1.5 units of distance per network tick to prevent teleporting
+          if (distance <= 1.5) {
             this.x = moveX;
             this.y = moveY;
 
