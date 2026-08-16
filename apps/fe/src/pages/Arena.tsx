@@ -610,10 +610,7 @@ export const Arena = () => {
     setSpaceId(spaceIdFromUrl);
   }, []);
 
-  const handleWebSocketMessageRef = useRef(handleWebSocketMessage);
-  useEffect(() => {
-    handleWebSocketMessageRef.current = handleWebSocketMessage;
-  }, [handleWebSocketMessage]);
+
 
   useEffect(() => {
     if (isLoading || !token || !spaceId) return;
@@ -807,6 +804,11 @@ export const Arena = () => {
     },
     [currentUser, remoteUserId, handleEndCall],
   );
+
+  const handleWebSocketMessageRef = useRef(handleWebSocketMessage);
+  useEffect(() => {
+    handleWebSocketMessageRef.current = handleWebSocketMessage;
+  }, [handleWebSocketMessage]);
 
 
 
