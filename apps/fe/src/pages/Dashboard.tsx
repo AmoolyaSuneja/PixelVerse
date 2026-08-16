@@ -69,12 +69,20 @@ export default function Dashboard() {
               WELCOME BACK, TRAVELER
             </p>
           </div>
-          <button
-            onClick={logout}
-            className="px-4 py-2 bg-[#FF4500] text-white border-[3px] border-black font-black uppercase text-sm hover:bg-black hover:text-white transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
-          >
-            LOGOUT
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => navigate("/avatar-selection")}
+              className="px-4 py-2 bg-[#32CD32] text-black border-[3px] border-black font-black uppercase text-sm hover:bg-black hover:text-white transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+            >
+              AVATAR
+            </button>
+            <button
+              onClick={logout}
+              className="px-4 py-2 bg-[#FF4500] text-white border-[3px] border-black font-black uppercase text-sm hover:bg-black hover:text-white transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+            >
+              LOGOUT
+            </button>
+          </div>
         </div>
 
         {/* Quick Actions */}
