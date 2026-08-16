@@ -82,30 +82,38 @@ export default function ManageSpace() {
   }
 
   return (
-    <div className="min-h-screen bg-[#E5E5E5] py-12 px-4 font-sans">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-black text-black mb-8 uppercase border-b-4 border-black inline-block pr-8 pb-2">
-          Manage Space: {space?.name}
+    <div className="min-h-screen bg-[#FDFBF7] py-12 px-4 font-sans relative overflow-hidden">
+      <div className="absolute bottom-0 right-0 w-full h-1/3 bg-[#FFD700] border-t-[6px] border-black -z-10"></div>
+      
+      <div className="max-w-4xl mx-auto relative z-10">
+        <h1 className="text-5xl md:text-6xl font-black text-black mb-12 uppercase tracking-tighter bg-white border-[6px] border-black inline-block px-6 py-4 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] transform -rotate-1">
+          MANAGE SPACE:<br/><span className="text-[#1E90FF]">{space?.name}</span>
         </h1>
-        <div className="bg-white border-4 border-black p-8 rounded-none">
-          <h2 className="text-2xl font-black text-black mb-6 uppercase border-b-2 border-black pb-2">
-            Banned Users
+        
+        <div className="bg-white border-[6px] border-black p-8 md:p-12 shadow-[16px_16px_0px_0px_rgba(0,0,0,1)] relative">
+          <div className="absolute top-0 right-0 w-16 h-16 bg-[#FF4500] border-l-[6px] border-b-[6px] border-black"></div>
+          
+          <h2 className="text-4xl font-black text-black mb-8 uppercase border-b-[6px] border-black pb-4 inline-block">
+            BANNED USERS
           </h2>
+          
           {space?.bannedUsers.length === 0 ? (
-            <p className="text-black font-bold uppercase tracking-widest">No banned users.</p>
+            <div className="bg-[#E5E5E5] border-[4px] border-black p-8 text-center">
+              <p className="text-2xl font-black text-black uppercase tracking-tight">NO BANNED USERS.</p>
+            </div>
           ) : (
-            <ul className="space-y-4">
+            <ul className="space-y-6">
               {space?.bannedUsers.map((user) => (
                 <li
                   key={user.id}
-                  className="flex justify-between items-center bg-gray-200 border-2 border-black p-4 rounded-none"
+                  className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-[#FDFBF7] border-[4px] border-black p-6 hover:bg-[#FFD700] transition-colors gap-4"
                 >
-                  <span className="text-black font-bold uppercase">{user.username}</span>
+                  <span className="text-2xl font-black text-black uppercase tracking-tight">{user.username}</span>
                   <button
                     onClick={() => handleUnban(user.username)}
-                    className="px-6 py-2 bg-green-500 border-2 border-black rounded-none text-black font-black uppercase hover:bg-green-600"
+                    className="w-full sm:w-auto px-8 py-4 bg-[#32CD32] border-[4px] border-black text-black text-xl font-black uppercase hover:bg-black hover:text-white transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                   >
-                    Unban
+                    UNBAN
                   </button>
                 </li>
               ))}
