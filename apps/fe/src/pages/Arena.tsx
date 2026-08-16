@@ -546,7 +546,7 @@ export const Arena = () => {
   }, []);
 
   useEffect(() => {
-    const userIds = Array.from(users.keys());
+    const userIds = Array.from(users.values()).map(u => u.userId);
     if (currentUser?.userId) userIds.push(currentUser.userId);
     fetchAvatars(userIds);
   }, [users, currentUser]);
@@ -580,7 +580,7 @@ export const Arena = () => {
     const nearby = Array.from(users.values()).filter((user) => {
       const dx = Math.abs(currentUser.gridX - user.gridX);
       const dy = Math.abs(currentUser.gridY - user.gridY);
-      return dx <= 2 && dy <= 2 && user.userId !== currentUser.userId;
+      return dx <= 2 && dy <= 2;
     });
     const nearbyUserIds = new Set(nearby.map((u) => u.userId));
     setNearbyUsers(nearbyUserIds);
@@ -610,6 +610,11 @@ export const Arena = () => {
     setSpaceId(spaceIdFromUrl);
   }, []);
 
+  const handleWebSocketMessageRef = useRef(handleWebSocketMessage);
+  useEffect(() => {
+    handleWebSocketMessageRef.current = handleWebSocketMessage;
+  }, [handleWebSocketMessage]);
+
   useEffect(() => {
     if (isLoading || !token || !spaceId) return;
 
@@ -622,7 +627,7 @@ export const Arena = () => {
     };
     wsRef.current.onmessage = (event) => {
       const message = JSON.parse(event.data);
-      handleWebSocketMessage(message);
+      handleWebSocketMessageRef.current(message);
     };
     return () => wsRef.current?.close();
   }, [isLoading, token, spaceId]);
@@ -803,13 +808,7 @@ export const Arena = () => {
     [currentUser, remoteUserId, handleEndCall],
   );
 
-  useEffect(() => {
-    if (!wsRef.current) return;
-    wsRef.current.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      handleWebSocketMessage(message);
-    };
-  }, [handleWebSocketMessage]);
+
 
 
   const sendPrivateMessage = (recipient: string, message: string) => {
@@ -884,7 +883,7 @@ export const Arena = () => {
       const currentTime = Date.now();
 
       // Update Current User Position locally via keys
-      let { visualX: currentVisualX, visualY: currentVisualY } = currentUserAnimationRef.current;
+      let { visualX: currentVisualX = 0, visualY: currentVisualY = 0 } = currentUserAnimationRef.current || {};
       
       let dx = 0;
       let dy = 0;
