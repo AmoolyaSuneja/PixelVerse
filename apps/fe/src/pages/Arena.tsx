@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { drawProceduralCharacter } from "../utils/SpriteGenerator";
+import { drawProceduralCharacter, generateProceduralDataURL } from "../utils/SpriteGenerator";
 import { useAvatar } from "../contexts/AvatarsContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
