@@ -41,7 +41,7 @@ export class RoomManager {
       this.rooms.set(spaceId, [user]);
       return;
     }
-    this.rooms.set(spaceId, [...(this.rooms.get(spaceId) ?? []), user]);
+    this.rooms.get(spaceId)?.push(user);
   }
 
   public broadcast(message: OutgoingMessage, user: User, roomId: string) {
