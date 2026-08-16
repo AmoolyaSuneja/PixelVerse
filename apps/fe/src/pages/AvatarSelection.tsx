@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import axios from "axios";
-import { BeatLoader } from "react-spinners";
 import { generateProceduralDataURL } from "../utils/SpriteGenerator";
 
 interface Avatar {
@@ -20,7 +19,7 @@ export default function AvatarSelection() {
   const [isSaving, setIsSaving] = useState(false);
   const { token } = useAuth();
   const navigate = useNavigate();
-  console.log(selectedAvatar);
+
   useEffect(() => {
     const fetchAvatars = async () => {
       try {
@@ -58,19 +57,18 @@ export default function AvatarSelection() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-indigo-900 to-purple-800 flex items-center justify-center">
-        <div className="flex flex-col items-center space-y-4">
-          <BeatLoader color="#ffffff" />
-          <p className="text-white text-lg">Loading avatars...</p>
+      <div className="min-h-screen bg-[#E5E5E5] flex items-center justify-center font-sans">
+        <div className="flex flex-col items-center">
+          <p className="text-black text-4xl font-black uppercase tracking-widest border-4 border-black p-4 bg-white">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-indigo-900 to-purple-800 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold text-center text-white mb-8 animate-fade-in">
+    <div className="min-h-screen bg-[#E5E5E5] py-12 px-4 font-sans flex flex-col items-center">
+      <div className="max-w-4xl mx-auto w-full">
+        <h1 className="text-4xl font-black text-center text-black mb-12 uppercase border-4 border-black bg-white p-4">
           Choose Your Avatar
         </h1>
 
@@ -79,36 +77,22 @@ export default function AvatarSelection() {
             <div
               key={avatar.id}
               onClick={() => setSelectedAvatar(avatar.id)}
-              className={`relative cursor-pointer transform transition-all duration-300 hover:scale-105 ${
-                selectedAvatar === avatar.id ? "ring-4 ring-purple-400" : ""
-              } rounded-2xl overflow-hidden aspect-square`}
+              className={`relative cursor-pointer border-4 ${
+                selectedAvatar === avatar.id ? "border-blue-600 bg-blue-100" : "border-black bg-white"
+              } rounded-none aspect-square flex flex-col`}
             >
               <img
                 src={avatar.imageUrl.startsWith("procedural:") ? generateProceduralDataURL(avatar.imageUrl) : avatar.imageUrl}
                 alt={avatar.name}
-                className="w-full h-full object-contain p-4 image-rendering-pixelated"
+                className="w-full flex-1 object-contain p-4"
                 style={{ imageRendering: "pixelated" }}
               />
-              <div className="absolute bottom-0 w-full text-center bg-black/50 text-white text-xs py-1 font-bold">
+              <div className="w-full text-center bg-black text-white text-sm py-2 font-bold uppercase border-t-4 border-black">
                 {avatar.name}
               </div>
               {selectedAvatar === avatar.id && (
-                <div className="absolute inset-0 bg-purple-500 bg-opacity-30 flex items-center justify-center">
-                  <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
-                    <svg
-                      className="w-8 h-8 text-purple-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  </div>
+                <div className="absolute top-0 right-0 bg-blue-600 text-white font-black px-2 py-1 text-xs border-b-4 border-l-4 border-black">
+                  SELECTED
                 </div>
               )}
             </div>
@@ -119,14 +103,14 @@ export default function AvatarSelection() {
           <button
             onClick={handleSave}
             disabled={!selectedAvatar || isSaving}
-            className={`px-8 py-3 text-lg font-semibold rounded-full transition-all ${
+            className={`px-8 py-4 text-xl font-black rounded-none uppercase border-4 border-black ${
               selectedAvatar
-                ? "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transform hover:scale-105"
-                : "bg-gray-400 cursor-not-allowed"
-            } text-white flex items-center`}
+                ? "bg-green-500 hover:bg-green-600 text-black cursor-pointer"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            }`}
           >
             {isSaving ? (
-              <BeatLoader color="#ffffff" size={8} />
+              "SAVING..."
             ) : (
               "Save & Continue"
             )}
