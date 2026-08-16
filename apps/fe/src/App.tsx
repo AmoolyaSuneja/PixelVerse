@@ -21,7 +21,7 @@ export const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
 };
 function App() {
   useEffect(() => {
-    const lenis = new Lenis({
+    new Lenis({
       autoRaf: true,
     });
   }, []);
