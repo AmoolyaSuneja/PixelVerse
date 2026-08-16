@@ -29,42 +29,52 @@ export default function CreateSpace() {
   };
 
   return (
-    <div className="min-h-screen bg-[#E5E5E5] flex items-center justify-center p-4 font-sans">
-      <div className="bg-white border-4 border-black rounded-none p-8 max-w-md w-full">
-        <h1 className="text-3xl font-black text-black mb-8 uppercase text-center border-b-4 border-black pb-4">Create New Space</h1>
+    <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center p-4 font-sans relative overflow-hidden">
+      <div className="absolute top-20 left-20 w-64 h-64 bg-[#32CD32] border-[6px] border-black rounded-full z-0 translate-x-[-50%] translate-y-[-50%]"></div>
+      
+      <div className="relative z-10 bg-white border-[6px] border-black p-10 max-w-lg w-full shadow-[16px_16px_0px_0px_rgba(0,0,0,1)]">
+        <h1 className="text-5xl md:text-6xl font-black text-black mb-10 uppercase text-center border-b-[6px] border-black pb-6 tracking-tighter">
+          CREATE<br/>SPACE
+        </h1>
 
-        <div className="space-y-6">
+        <div className="space-y-8">
           <div>
-            <label className="block text-black mb-2 font-bold uppercase tracking-wider">Space Name</label>
+            <label className="block text-black mb-2 font-black uppercase text-xl">Space Name</label>
             <input
               type="text"
-              className="w-full bg-white border-2 border-black rounded-none px-4 py-3 text-black font-bold focus:outline-none"
+              className="w-full bg-[#FDFBF7] border-[4px] border-black rounded-none px-4 py-4 text-black font-black uppercase text-xl focus:outline-none focus:bg-[#FFD700] transition-colors"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              placeholder="ENTER NAME"
             />
           </div>
 
           <div>
-            <label className="block text-black mb-2 font-bold uppercase tracking-wider">
+            <label className="block text-black mb-2 font-black uppercase text-xl">
               Dimensions
             </label>
-            <select
-              className="w-full bg-white border-2 border-black rounded-none px-4 py-3 text-black font-bold focus:outline-none appearance-none cursor-pointer"
-              value={dimensions}
-              onChange={(e) => setDimensions(e.target.value)}
-            >
-              <option value="100x100">100x100</option>
-              <option value="200x200">200x200</option>
-              <option value="300x300">300x300</option>
-            </select>
+            <div className="relative">
+              <select
+                className="w-full bg-[#FDFBF7] border-[4px] border-black rounded-none px-4 py-4 text-black font-black uppercase text-xl focus:outline-none focus:bg-[#1E90FF] focus:text-white appearance-none cursor-pointer transition-colors"
+                value={dimensions}
+                onChange={(e) => setDimensions(e.target.value)}
+              >
+                <option value="100x100">100 x 100</option>
+                <option value="200x200">200 x 200</option>
+                <option value="300x300">300 x 300</option>
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none border-l-[4px] border-black bg-white">
+                <span className="font-black text-black">▼</span>
+              </div>
+            </div>
           </div>
 
           <button
             onClick={handleCreate}
             disabled={isCreating}
-            className="w-full py-4 bg-yellow-400 border-2 border-black rounded-none text-black font-black uppercase hover:bg-yellow-500 mt-8"
+            className="w-full py-6 bg-[#FF4500] border-[6px] border-black rounded-none text-white text-3xl font-black uppercase hover:bg-black hover:text-white transition-colors mt-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
           >
-            {isCreating ? "CREATING..." : "CREATE SPACE"}
+            {isCreating ? "WAIT..." : "LAUNCH"}
           </button>
         </div>
       </div>
