@@ -31,7 +31,7 @@ export const AvatarProvider = ({ children }: { children: ReactNode }) => {
       const newAvatars = new Map(avatars);
       avatarData.forEach(
         ({ username, avatarId }: { username: string; avatarId: string }) => {
-          newAvatars.set(username, avatarId || "/gAvatarV2.png");
+          newAvatars.set(username, avatarId || "default");
         },
       );
       setAvatars(newAvatars);
