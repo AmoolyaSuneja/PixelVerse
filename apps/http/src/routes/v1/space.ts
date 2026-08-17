@@ -269,3 +269,33 @@ spaceRouter.post(
     res.json({ message: "User unbanned successfully" });
   }
 );
+
+spaceRouter.put(
+  "/:spaceId/vibe",
+  userMiddleware,
+  async (req: Request, res: Response) => {
+    const spaceId = req.params.spaceId as string;
+    const { vibe } = req.body;
+    if (!vibe) {
+      res.status(400).json({ message: "Vibe is required" });
+      return;
+    }
+    const space = await client.space.findUnique({
+      where: { id: spaceId },
+      select: { creatorId: true },
+    });
+    if (!space) {
+      res.status(404).json({ message: "Space not found" });
+      return;
+    }
+    if (space.creatorId !== req.userId) {
+      res.status(403).json({ message: "Unauthorized" });
+      return;
+    }
+    await client.space.update({
+      where: { id: spaceId },
+      data: { thumbnail: vibe },
+    });
+    res.json({ message: "Space vibe updated successfully" });
+  }
+);
