@@ -2,7 +2,6 @@ import { useParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import axios from "axios";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 
 interface BannedUser {
   id: string;
@@ -34,7 +33,6 @@ const VIBES = [
 export default function ManageSpace() {
   const { spaceId } = useParams<{ spaceId: string }>();
   const { token } = useAuth();
-  const navigate = useNavigate();
   const [space, setSpace] = useState<SpaceDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

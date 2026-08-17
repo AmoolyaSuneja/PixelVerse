@@ -1,4 +1,4 @@
-import React, { JSX } from "react";
+import { JSX } from "react";
 import { Sidebar } from "./Sidebar";
 
 export const Layout = ({ children }: { children: JSX.Element }) => {

@@ -391,10 +391,6 @@ export const Arena = () => {
     }
   };
 
-  const handleExitSpace = () => {
-    if (wsRef.current) wsRef.current.close();
-    navigate("/");
-  };
 
   // --- Game Loop & Effects ---
   useEffect(() => {
