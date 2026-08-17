@@ -16,6 +16,7 @@ export default function Dashboard() {
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [spaceIdInput, setSpaceIdInput] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [spaceToDelete, setSpaceToDelete] = useState<string | null>(null);
   const { token, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -185,19 +186,7 @@ export default function Dashboard() {
                         EDIT
                       </button>
                       <button
-                        onClick={async () => {
-                          if (window.confirm("ARE YOU SURE YOU WANT TO DELETE THIS SPACE?")) {
-                            try {
-                              await axios.delete(`${BACKEND_URL}/api/v1/space/${space.id}`, {
-                                headers: { Authorization: `Bearer ${token}` }
-                              });
-                              setSpaces(spaces.filter(s => s.id !== space.id));
-                            } catch (err) {
-                              console.error(err);
-                              alert("FAILED TO DELETE SPACE");
-                            }
-                          }
-                        }}
+                        onClick={() => setSpaceToDelete(space.id)}
                         className="px-2 py-1 bg-[#FF4500] text-white border-2 border-black font-black uppercase text-[10px] hover:bg-black transition-colors"
                       >
                         DEL
@@ -210,6 +199,47 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* Elegant Delete Modal */}
+      {spaceToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
+          <div className="bg-white border-[6px] border-black p-8 max-w-md w-full shadow-[16px_16px_0px_0px_rgba(0,0,0,1)] relative transform rotate-1">
+            <div className="absolute -top-4 -right-4 w-12 h-12 bg-[#FF4500] border-[4px] border-black rounded-full z-10 flex items-center justify-center text-white font-black text-2xl">!</div>
+            <h2 className="text-3xl font-black text-black uppercase tracking-tighter mb-4 border-b-[4px] border-black pb-2">
+              Confirm Delete
+            </h2>
+            <p className="text-lg font-bold text-black uppercase mb-8">
+              Are you absolute sure you want to obliterate this space? This cannot be undone.
+            </p>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setSpaceToDelete(null)}
+                className="flex-1 py-3 bg-[#E5E5E5] border-[4px] border-black text-black font-black uppercase text-xl hover:bg-white transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+              >
+                CANCEL
+              </button>
+              <button
+                onClick={async () => {
+                  if (!spaceToDelete) return;
+                  try {
+                    await axios.delete(`${BACKEND_URL}/api/v1/space/${spaceToDelete}`, {
+                      headers: { Authorization: `Bearer ${token}` }
+                    });
+                    setSpaces(spaces.filter(s => s.id !== spaceToDelete));
+                    setSpaceToDelete(null);
+                  } catch (err) {
+                    console.error(err);
+                    alert("FAILED TO DELETE SPACE");
+                  }
+                }}
+                className="flex-1 py-3 bg-[#FF4500] border-[4px] border-black text-white font-black uppercase text-xl hover:bg-black transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+              >
+                NUKE IT
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
