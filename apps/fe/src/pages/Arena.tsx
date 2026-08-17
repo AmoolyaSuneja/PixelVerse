@@ -3,20 +3,6 @@ import { drawProceduralCharacter, generateProceduralDataURL } from "../utils/Spr
 import { useAvatar } from "../contexts/AvatarsContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { initializeApp } from "firebase/app";
-import {
-  getFirestore,
-  collection,
-  doc,
-  setDoc,
-  addDoc,
-  updateDoc,
-  onSnapshot,
-  query,
-  where,
-  deleteDoc,
-  getDoc,
-} from "firebase/firestore";
 import axios from "axios";
 import { drawBackground } from "../utils/MapGenerator";
 // Removed lucide-react per brutalist rules
@@ -25,19 +11,6 @@ import { drawBackground } from "../utils/MapGenerator";
 const AVATAR_SIZE = 80;
 const PARTICLE_COUNT = 100;
 const TRAIL_LENGTH = 20;
-
-// --- Firebase Configuration ---
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
 
 // --- WebRTC Configuration ---
 const servers = {
@@ -98,10 +71,7 @@ export const Arena = () => {
     "idle",
   );
   const [remoteUserId, setRemoteUserId] = useState<string | null>(null);
-  const [incomingCallDocId, setIncomingCallDocId] = useState<string | null>(
-    null,
-  );
-  const [currentCallDocId, setCurrentCallDocId] = useState<string | null>(null);
+  const [incomingOffer, setIncomingOffer] = useState<any>(null);
   const [userCallStatus, setUserCallStatus] = useState<
     Map<string, string | null>
   >(new Map());
@@ -162,40 +132,7 @@ export const Arena = () => {
     };
   }, []);
 
-  // --- Firestore: Incoming Call Listener ---
-  useEffect(() => {
-    if (!currentUser?.userId) return;
-
-    const q = query(
-      collection(db, "calls"),
-      where("receiverId", "==", currentUser.userId),
-      where("status", "==", "offering"),
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      snapshot.docChanges().forEach((change) => {
-        if (change.type === "added") {
-          const data = change.doc.data();
-
-          if (blockedUsersRef.current.has(data.callerId)) {
-            console.log(`Blocked incoming call from ${data.callerId}`);
-
-            deleteDoc(change.doc.ref).catch((err) =>
-              console.error("Error auto-rejecting blocked call", err),
-            );
-            return;
-          }
-
-          if (callStatus === "idle") {
-            setIncomingCallDocId(change.doc.id);
-            setRemoteUserId(data.callerId);
-            setCallStatus("incoming");
-          }
-        }
-      });
-    });
-    return () => unsubscribe();
-  }, [currentUser?.userId, callStatus]);
+  // --- Firestore: Incoming Call Listener Removed ---
 
   // --- Video Attachment Logic ---
   useEffect(() => {
@@ -252,7 +189,6 @@ export const Arena = () => {
   const handleCallUser = useCallback(
     async (targetUserId: string) => {
       if (blockedUsersRef.current.has(targetUserId)) return;
-
       if (callStatus !== "idle") return;
       const stream = await startWebcam();
       if (!stream) return;
@@ -263,113 +199,84 @@ export const Arena = () => {
       const pc = setupPeerConnection(stream);
       peerConnection.current = pc;
 
-      const callDoc = doc(collection(db, "calls"));
-      const offerCandidates = collection(callDoc, "offerCandidates");
-      const answerCandidates = collection(callDoc, "answerCandidates");
-
-      setCurrentCallDocId(callDoc.id);
-
       pc.onicecandidate = (event) => {
         if (event.candidate) {
-          addDoc(offerCandidates, event.candidate.toJSON());
+          wsRef.current?.send(
+            JSON.stringify({
+              type: "webrtc-ice-candidate",
+              payload: { candidate: event.candidate.toJSON(), recipient: targetUserId },
+            }),
+          );
         }
       };
 
       const offerDescription = await pc.createOffer();
       await pc.setLocalDescription(offerDescription);
-      const offer = { sdp: offerDescription.sdp, type: offerDescription.type };
-
-      await setDoc(callDoc, {
-        callerId: currentUser.userId,
-        receiverId: targetUserId,
-        offer,
-        status: "offering",
-      });
-
-      onSnapshot(callDoc, (snapshot) => {
-        const data = snapshot.data();
-        if (!pc.currentRemoteDescription && data?.answer) {
-          const answerDescription = new RTCSessionDescription(data.answer);
-          pc.setRemoteDescription(answerDescription);
-          wsRef.current?.send(
-            JSON.stringify({
-              type: "call-started",
-              payload: { user1: currentUser.userId, user2: targetUserId },
-            }),
-          );
-        }
-      });
-
-      onSnapshot(answerCandidates, (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-          if (change.type === "added") {
-            const candidate = new RTCIceCandidate(change.doc.data());
-            pc.addIceCandidate(candidate);
-          }
-        });
-      });
+      
+      wsRef.current?.send(
+        JSON.stringify({
+          type: "webrtc-offer",
+          payload: { offer: { sdp: offerDescription.sdp, type: offerDescription.type }, recipient: targetUserId },
+        }),
+      );
     },
-    [currentUser],
+    [currentUser, callStatus],
   );
 
   // --- Action: Accept Call ---
   const acceptCall = useCallback(async () => {
-    if (!incomingCallDocId) return;
+    if (!incomingOffer || !remoteUserId) return;
     const stream = await startWebcam();
     if (!stream) return;
 
     setCallStatus("in-call");
-    setCurrentCallDocId(incomingCallDocId);
 
     const pc = setupPeerConnection(stream);
     peerConnection.current = pc;
 
-    const callDoc = doc(db, "calls", incomingCallDocId);
-    const answerCandidates = collection(callDoc, "answerCandidates");
-    const offerCandidates = collection(callDoc, "offerCandidates");
-
     pc.onicecandidate = (event) => {
       if (event.candidate) {
-        addDoc(answerCandidates, event.candidate.toJSON());
+        wsRef.current?.send(
+          JSON.stringify({
+            type: "webrtc-ice-candidate",
+            payload: { candidate: event.candidate.toJSON(), recipient: remoteUserId },
+          }),
+        );
       }
     };
 
-    const callSnapshot = await getDoc(callDoc);
-    const callData = callSnapshot.data();
-    if (!callData) return;
-
-    await pc.setRemoteDescription(new RTCSessionDescription(callData.offer));
+    await pc.setRemoteDescription(new RTCSessionDescription(incomingOffer));
     const answerDescription = await pc.createAnswer();
     await pc.setLocalDescription(answerDescription);
 
-    const answer = { type: answerDescription.type, sdp: answerDescription.sdp };
-    await updateDoc(callDoc, { answer, status: "answered" });
-
-    onSnapshot(offerCandidates, (snapshot) => {
-      snapshot.docChanges().forEach((change) => {
-        if (change.type === "added") {
-          const candidate = new RTCIceCandidate(change.doc.data());
-          pc.addIceCandidate(candidate);
-        }
-      });
-    });
+    wsRef.current?.send(
+      JSON.stringify({
+        type: "webrtc-answer",
+        payload: { answer: { type: answerDescription.type, sdp: answerDescription.sdp }, recipient: remoteUserId },
+      }),
+    );
 
     wsRef.current?.send(
       JSON.stringify({
         type: "call-started",
-        payload: { user1: currentUser.userId, user2: callData.callerId },
+        payload: { user1: currentUser.userId, user2: remoteUserId },
       }),
     );
-  }, [incomingCallDocId, currentUser]);
+  }, [incomingOffer, remoteUserId, currentUser]);
 
   const declineCall = useCallback(async () => {
-    if (incomingCallDocId) {
-      await deleteDoc(doc(db, "calls", incomingCallDocId));
+    if (remoteUserId) {
+      wsRef.current?.send(
+        JSON.stringify({
+          type: "webrtc-decline",
+          payload: { recipient: remoteUserId },
+        }),
+      );
     }
     setCallStatus("idle");
-    setIncomingCallDocId(null);
+    setIncomingOffer(null);
     setRemoteUserId(null);
-  }, [incomingCallDocId]);
+  }, [remoteUserId]);
 
   // --- Action: End Call ---
   const handleEndCall = useCallback(async (skipNotify?: any) => {
@@ -390,19 +297,13 @@ export const Arena = () => {
         }),
       );
     }
-    if (currentCallDocId) {
-      try {
-        await deleteDoc(doc(db, "calls", currentCallDocId));
-      } catch (e) {}
-    }
     setCallStatus("idle");
     setRemoteUserId(null);
-    setCurrentCallDocId(null);
-    setIncomingCallDocId(null);
+    setIncomingOffer(null);
     setScreenShareActive(false);
     setDownloadLink(null);
     setIsVideoSwapped(false);
-  }, [currentCallDocId, remoteUserId, currentUser]);
+  }, [remoteUserId, currentUser]);
 
   // --- Features ---
   const toggleScreenShare = async () => {
@@ -791,6 +692,40 @@ export const Arena = () => {
           ) {
             handleEndCall(true);
           }
+          break;
+        case "webrtc-offer":
+          if (blockedUsersRef.current.has(message.payload.sender)) return;
+          if (callStatus === "idle") {
+            setIncomingOffer(message.payload.offer);
+            setRemoteUserId(message.payload.sender);
+            setCallStatus("incoming");
+          } else {
+            wsRef.current?.send(
+              JSON.stringify({
+                type: "webrtc-decline",
+                payload: { recipient: message.payload.sender },
+              }),
+            );
+          }
+          break;
+        case "webrtc-answer":
+          if (peerConnection.current && !peerConnection.current.currentRemoteDescription) {
+            peerConnection.current.setRemoteDescription(new RTCSessionDescription(message.payload.answer));
+            wsRef.current?.send(
+              JSON.stringify({
+                type: "call-started",
+                payload: { user1: currentUser.userId, user2: remoteUserId },
+              }),
+            );
+          }
+          break;
+        case "webrtc-ice-candidate":
+          if (peerConnection.current) {
+            peerConnection.current.addIceCandidate(new RTCIceCandidate(message.payload.candidate)).catch(e => console.error("Error adding ice candidate", e));
+          }
+          break;
+        case "webrtc-decline":
+          handleEndCall(true);
           break;
         case "movement-rejected":
           setCurrentUser((prev: any) => ({
@@ -1184,11 +1119,16 @@ export const Arena = () => {
                   ref={privateMessagesContainerRef}
                   className="flex-1 overflow-y-auto mb-2 space-y-2 pr-2"
                 >
-                  {privateMessages.map((msg, i) => (
+                  {privateMessages
+                    .filter((msg) => msg.userId === activeChatUser || msg.recipient === activeChatUser)
+                    .map((msg, i) => (
                     <div
                       key={i}
                       className={`text-sm p-3 border-[4px] border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${msg.userId === currentUser.userId ? "bg-[#FFD700] text-black text-right" : "bg-white text-black"}`}
                     >
+                      <span className="font-black uppercase text-xs block mb-1">
+                        {msg.userId === currentUser.userId ? "You" : msg.userId}:
+                      </span>
                       <span className="font-bold">{msg.message}</span>
                     </div>
                   ))}

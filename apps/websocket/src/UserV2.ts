@@ -308,6 +308,26 @@ export class User {
             RoomManager.getInstance().endCall(this.spaceId!, u1, u2);
             break;
           }
+
+          case "webrtc-offer":
+          case "webrtc-answer":
+          case "webrtc-ice-candidate":
+          case "webrtc-decline": {
+            const recipientId = parsedData.payload.recipient;
+            const recipient = RoomManager.getInstance()
+              .rooms.get(this.spaceId!)
+              ?.find((u) => u.userId === recipientId);
+            if (recipient) {
+              recipient.send({
+                type: parsedData.type,
+                payload: {
+                  ...parsedData.payload,
+                  sender: this.userId!
+                },
+              });
+            }
+            break;
+          }
         }
       } catch (err) {
         console.error("Error processing websocket message:", err);
