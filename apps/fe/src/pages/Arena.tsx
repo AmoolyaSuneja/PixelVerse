@@ -22,7 +22,6 @@ import { drawBackground } from "../utils/MapGenerator";
 // Removed lucide-react per brutalist rules
 
 // --- Constants ---
-const GRID_SIZE = 50;
 const AVATAR_SIZE = 80;
 const PARTICLE_COUNT = 100;
 const TRAIL_LENGTH = 20;
