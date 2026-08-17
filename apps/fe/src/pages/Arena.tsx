@@ -1047,7 +1047,7 @@ export const Arena = () => {
   return (
     <div
       ref={containerRef}
-      className="h-screen w-screen bg-[#FDFBF7] text-black overflow-hidden outline-none flex flex-col font-sans"
+      className="h-full w-full bg-[#FDFBF7] text-black overflow-hidden outline-none flex flex-col font-sans"
       onKeyDown={handleKeyDown}
       onKeyUp={handleKeyUp}
       tabIndex={0}
@@ -1064,12 +1064,6 @@ export const Arena = () => {
             <div className="bg-white px-4 py-2 border-[4px] border-black text-sm font-black uppercase text-black">
               SPACE: {spaceId}
             </div>
-            <button
-              onClick={handleExitSpace}
-              className="px-6 py-2 bg-red-600 text-white font-black uppercase border-2 border-black hover:bg-red-700"
-            >
-              Disconnect
-            </button>
           </div>
         </div>
 

@@ -10,6 +10,7 @@ import AvatarSelection from "./pages/AvatarSelection";
 import CreateSpace from "./pages/SpaceCreate";
 import ManageSpace from "./pages/ManageSpace";
 import Lenis from "lenis";
+import { Layout } from "./components/Layout";
 
 export const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const { user, isLoading } = useAuth();
@@ -17,7 +18,7 @@ export const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   if (isLoading) return <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center font-sans font-black uppercase text-black text-4xl"><span className="bg-yellow-400 border-4 border-black p-4 tracking-widest translate-x-2 translate-y-2"><span className="block -translate-x-4 -translate-y-4 bg-white border-4 border-black p-4">LOADING...</span></span></div>;
   if (!user) return <Navigate to="/auth" replace />;
 
-  return children;
+  return <Layout>{children}</Layout>;
 };
 function App() {
   useEffect(() => {
