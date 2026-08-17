@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { drawProceduralCharacter, generateProceduralDataURL } from "../utils/SpriteGenerator";
 import { useAvatar } from "../contexts/AvatarsContext";
 import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { drawBackground } from "../utils/MapGenerator";
 // Removed lucide-react per brutalist rules
@@ -36,6 +37,7 @@ export const Arena = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const navigate = useNavigate();
   const { avatars, fetchAvatars } = useAvatar();
   const { token, isLoading } = useAuth();
   const [loadedImages, setLoadedImages] = useState<
@@ -1049,11 +1051,22 @@ export const Arena = () => {
       data-lenis-prevent
     >
       <div className="relative w-full h-full flex flex-col z-10 p-4 gap-4">
-        {/* Flat Header */}
         <div className="flex justify-between items-center bg-[#FFD700] border-[6px] border-black p-4 rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-          <h1 className="text-4xl font-black text-black uppercase tracking-tighter">
-            Pixel Arena
-          </h1>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => {
+                if (wsRef.current) wsRef.current.close();
+                navigate(-1);
+              }}
+              className="w-12 h-12 bg-white border-[4px] border-black flex items-center justify-center font-black text-2xl hover:bg-black hover:text-white transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+              title="Go Back"
+            >
+              ↩
+            </button>
+            <h1 className="text-4xl font-black text-black uppercase tracking-tighter">
+              Pixel Arena
+            </h1>
+          </div>
           <div className="flex gap-4 items-center">
             <div className="bg-white px-4 py-2 border-[4px] border-black text-sm font-black uppercase text-black">
               SPACE: {spaceId}

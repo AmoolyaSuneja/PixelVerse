@@ -17,6 +17,10 @@ const DEFAULT_AVATARS = [
   { name: "Cyan Crewmate", imageUrl: "procedural:cyan" },
   { name: "Purple Crewmate", imageUrl: "procedural:purple" },
   { name: "Pink Crewmate", imageUrl: "procedural:pink" },
+  { name: "Brown Crewmate", imageUrl: "procedural:brown" },
+  { name: "Black Crewmate", imageUrl: "procedural:black" },
+  { name: "White Crewmate", imageUrl: "procedural:white" },
+  { name: "Lime Crewmate", imageUrl: "procedural:lime" },
 ];
 
 async function main() {

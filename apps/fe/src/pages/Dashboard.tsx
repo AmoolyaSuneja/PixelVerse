@@ -62,9 +62,18 @@ export default function Dashboard() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b-[3px] border-black pb-3 gap-3 relative">
           <div className="absolute -top-2 -left-2 w-16 h-16 bg-[#FFD700] rounded-full border-[3px] border-black -z-10"></div>
           <div>
-            <h1 className="text-4xl md:text-5xl font-black text-black uppercase tracking-tighter leading-none">
-              DASH<br/>BOARD
-            </h1>
+            <div className="flex gap-4 items-center mb-2">
+              <button
+                onClick={() => navigate(-1)}
+                className="w-12 h-12 bg-white border-[3px] border-black flex items-center justify-center font-black text-2xl hover:bg-black hover:text-white transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                title="Go Back"
+              >
+                ↩
+              </button>
+              <h1 className="text-4xl md:text-5xl font-black text-black uppercase tracking-tighter leading-none">
+                DASH<br/>BOARD
+              </h1>
+            </div>
             <p className="mt-2 text-sm font-black text-black uppercase bg-[#1E90FF] text-white border-2 border-black inline-block px-2 py-1 transform -rotate-1">
               WELCOME BACK, TRAVELER
             </p>
@@ -174,6 +183,24 @@ export default function Dashboard() {
                         className="px-2 py-1 bg-white text-black border-2 border-black font-black uppercase text-[10px] hover:bg-gray-200 transition-colors"
                       >
                         EDIT
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (window.confirm("ARE YOU SURE YOU WANT TO DELETE THIS SPACE?")) {
+                            try {
+                              await axios.delete(`${BACKEND_URL}/api/v1/space/${space.id}`, {
+                                headers: { Authorization: `Bearer ${token}` }
+                              });
+                              setSpaces(spaces.filter(s => s.id !== space.id));
+                            } catch (err) {
+                              console.error(err);
+                              alert("FAILED TO DELETE SPACE");
+                            }
+                          }
+                        }}
+                        className="px-2 py-1 bg-[#FF4500] text-white border-2 border-black font-black uppercase text-[10px] hover:bg-black transition-colors"
+                      >
+                        DEL
                       </button>
                     </div>
                   </div>

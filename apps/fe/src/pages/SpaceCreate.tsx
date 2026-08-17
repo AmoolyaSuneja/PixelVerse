@@ -47,9 +47,18 @@ export default function CreateSpace() {
       <div className="absolute top-20 left-20 w-64 h-64 bg-[#32CD32] border-[6px] border-black rounded-full z-0 translate-x-[-50%] translate-y-[-50%]"></div>
       
       <div className="relative z-10 bg-white border-[4px] border-black p-8 max-w-2xl w-full shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]">
-        <h1 className="text-4xl md:text-5xl font-black text-black mb-8 uppercase text-center border-b-[4px] border-black pb-4 tracking-tighter">
-          CREATE SPACE
-        </h1>
+        <div className="flex gap-4 items-center mb-8 border-b-[4px] border-black pb-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="w-12 h-12 bg-white border-[3px] border-black flex items-center justify-center font-black text-2xl hover:bg-black hover:text-white transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+            title="Go Back"
+          >
+            ↩
+          </button>
+          <h1 className="text-4xl md:text-5xl font-black text-black uppercase text-center tracking-tighter flex-1">
+            CREATE SPACE
+          </h1>
+        </div>
 
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

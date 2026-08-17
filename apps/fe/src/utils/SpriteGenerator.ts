@@ -54,9 +54,27 @@ export const drawProceduralCharacter = (
     "cyan": { body: "#38FEDC", shadow: "#24A8BE", visor: "#E5F0F9", visorHighlight: "#90AFC5", backpack: "#00A8A8" },
     "purple": { body: "#6B2FBB", shadow: "#3B177C", visor: "#E5F0F9", visorHighlight: "#90AFC5", backpack: "#4B0082" },
     "pink": { body: "#ED54BA", shadow: "#AB2BAD", visor: "#E5F0F9", visorHighlight: "#90AFC5", backpack: "#D12A9E" },
+    "brown": { body: "#71491E", shadow: "#45280E", visor: "#E5F0F9", visorHighlight: "#90AFC5", backpack: "#3E250A" },
+    "black": { body: "#3F474E", shadow: "#1E1F26", visor: "#E5F0F9", visorHighlight: "#90AFC5", backpack: "#000000" },
+    "white": { body: "#D6E0F0", shadow: "#8394BF", visor: "#E5F0F9", visorHighlight: "#90AFC5", backpack: "#A6B3D1" },
+    "lime": { body: "#50EF39", shadow: "#15A742", visor: "#E5F0F9", visorHighlight: "#90AFC5", backpack: "#168B31" },
   };
 
-  const palette = palettes[id] || palettes["red"];
+  const paletteKeys = Object.keys(palettes);
+  // Hash the ID slightly differently if needed, but ID is usually already unique colors in API
+  // Using direct mapping if available, else a predictable rotation
+  let palette;
+  if (palettes[id]) {
+    palette = palettes[id];
+  } else {
+    // Generate a hash based on the id string to reliably pick a color
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) {
+        hash = id.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const colorIndex = Math.abs(hash) % paletteKeys.length;
+    palette = palettes[paletteKeys[colorIndex]];
+  }
   
   ctx.save();
   ctx.translate(x, y);

@@ -69,9 +69,18 @@ export default function AvatarSelection() {
     <div className="min-h-screen bg-[#FDFBF7] py-12 px-4 font-sans flex flex-col items-center">
       <div className="max-w-4xl mx-auto w-full relative">
         <div className="absolute -top-4 -right-4 w-16 h-16 bg-[#FF00FF] border-[4px] border-black -z-10 rotate-45"></div>
-        <h1 className="text-4xl md:text-5xl font-black text-center text-black mb-12 uppercase border-[4px] border-black bg-[#FFD700] p-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] tracking-tighter">
-          CHOOSE AVATAR
-        </h1>
+        <div className="flex gap-4 items-center justify-center mb-12">
+          <button
+            onClick={() => navigate(-1)}
+            className="w-16 h-16 bg-white border-[4px] border-black flex items-center justify-center font-black text-3xl hover:bg-black hover:text-white transition-colors shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+            title="Go Back"
+          >
+            ↩
+          </button>
+          <h1 className="text-4xl md:text-5xl font-black text-center text-black uppercase border-[4px] border-black bg-[#FFD700] p-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] tracking-tighter flex-1">
+            CHOOSE AVATAR
+          </h1>
+        </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
           {avatars.map((avatar) => (
