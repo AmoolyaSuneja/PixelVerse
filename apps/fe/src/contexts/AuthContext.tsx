@@ -5,7 +5,22 @@ import {
   useEffect,
   ReactNode,
 } from "react";
-import jwt from "jsonwebtoken";
+
+// Helper to decode JWT without needing the jsonwebtoken Node.js library
+function parseJwt(token: string) {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      window.atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return null;
+  }
+}
 
 type User = {
   id: string;
@@ -35,7 +50,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const storedToken = sessionStorage.getItem("token");
       if (storedToken) {
         try {
-          const decoded = jwt.decode(storedToken) as {
+          const decoded = parseJwt(storedToken) as {
             userId: string;
             role: "User" | "Admin";
           } | null;
@@ -73,7 +88,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       sessionStorage.setItem("token", data.token);
-      const decoded = jwt.decode(data.token) as {
+      const decoded = parseJwt(data.token) as {
         userId: string;
         role: "User" | "Admin";
       };
