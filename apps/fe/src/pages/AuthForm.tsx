@@ -45,22 +45,22 @@ export default function AuthPage() {
     <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans relative overflow-hidden">
       {/* Background Decor */}
       <div className="absolute top-0 left-0 w-1/2 h-full bg-[#1E90FF] border-r-8 border-black z-0"></div>
-      <div className="absolute top-10 right-10 w-32 h-32 bg-[#FFD700] border-[6px] border-black rounded-full z-0"></div>
-      <div className="absolute bottom-10 left-10 w-48 h-48 bg-[#FF4500] border-[6px] border-black z-0 rotate-12"></div>
+      <div className="absolute top-10 right-10 w-24 h-24 bg-[#FFD700] border-[6px] border-black rounded-full z-0"></div>
+      <div className="absolute bottom-10 left-10 w-32 h-32 bg-[#FF4500] border-[6px] border-black z-0 rotate-12"></div>
       
-      {error && <div className="absolute top-4 z-50 text-black bg-[#FF4500] border-4 border-black p-4 font-black uppercase text-xl">{error}</div>}
+      {error && <div className="absolute top-4 z-50 text-black bg-[#FF4500] border-4 border-black p-4 font-black uppercase text-base">{error}</div>}
       
-      <div className="relative z-10 max-w-sm w-full bg-white border-[4px] border-black p-8 rounded-none shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]">
-        <div className="text-center mb-8 border-b-[4px] border-black pb-4">
-          <h1 className="text-4xl md:text-5xl font-black text-black uppercase tracking-tighter">
+      <div className="relative z-10 max-w-sm w-full bg-white border-[4px] border-black p-6 rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+        <div className="text-center mb-6 border-b-[4px] border-black pb-4">
+          <h1 className="text-3xl md:text-4xl font-black text-black uppercase tracking-tighter">
             Pixelverse
           </h1>
           <p className="mt-4 text-sm text-black font-black uppercase bg-[#FFD700] border-2 border-black inline-block px-2 py-1 transform -rotate-2">
             Gateway to Infinite Worlds
           </p>
         </div>
-        <div className="text-center mb-6">
-          <h2 className="text-xl font-black text-black uppercase">
+        <div className="text-center mb-4">
+          <h2 className="text-lg font-black text-black uppercase">
             {isLogin ? "Welcome Back!" : "Begin Journey"}
           </h2>
         </div>
@@ -76,7 +76,7 @@ export default function AuthPage() {
                 name="username"
                 type="text"
                 required
-                className="rounded-none block w-full px-3 py-3 bg-[#FDFBF7] border-[3px] border-black text-black placeholder-gray-500 focus:outline-none focus:bg-[#1E90FF] focus:text-white sm:text-base font-black uppercase transition-colors"
+                className="rounded-none block w-full px-3 py-2 bg-[#FDFBF7] border-[3px] border-black text-black placeholder-gray-500 focus:outline-none focus:bg-[#1E90FF] focus:text-white sm:text-sm font-black uppercase transition-colors"
                 placeholder="USERNAME"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -92,7 +92,7 @@ export default function AuthPage() {
                 name="password"
                 type="password"
                 required
-                className="rounded-none block w-full px-3 py-3 bg-[#FDFBF7] border-[3px] border-black text-black placeholder-gray-500 focus:outline-none focus:bg-[#FF4500] focus:text-white sm:text-base font-black uppercase transition-colors"
+                className="rounded-none block w-full px-3 py-2 bg-[#FDFBF7] border-[3px] border-black text-black placeholder-gray-500 focus:outline-none focus:bg-[#FF4500] focus:text-white sm:text-sm font-black uppercase transition-colors"
                 placeholder="PASSWORD"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -103,7 +103,7 @@ export default function AuthPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full flex justify-center py-3 px-4 border-[3px] border-black text-lg font-black rounded-none text-black bg-[#FFD700] hover:bg-black hover:text-white focus:outline-none uppercase transition-colors"
+            className="w-full flex justify-center py-2 px-4 border-[3px] border-black text-base font-black rounded-none text-black bg-[#FFD700] hover:bg-black hover:text-white focus:outline-none uppercase transition-colors"
           >
             {isSubmitting ? (
               <span>WAIT...</span>

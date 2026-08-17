@@ -43,19 +43,19 @@ export default function CreateSpace() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center p-4 font-sans relative overflow-hidden py-12">
-      <div className="absolute top-20 left-20 w-64 h-64 bg-[#32CD32] border-[6px] border-black rounded-full z-0 translate-x-[-50%] translate-y-[-50%]"></div>
+    <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center p-4 font-sans relative overflow-hidden py-8">
+      <div className="absolute top-10 left-10 w-48 h-48 bg-[#32CD32] border-[6px] border-black rounded-full z-0 translate-x-[-20%] translate-y-[-20%]"></div>
       
-      <div className="relative z-10 bg-white border-[4px] border-black p-8 max-w-2xl w-full shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]">
+      <div className="relative z-10 bg-white border-[4px] border-black p-6 max-w-xl w-full shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
         <div className="flex gap-4 items-center mb-8 border-b-[4px] border-black pb-4">
           <button
             onClick={() => navigate(-1)}
-            className="w-12 h-12 bg-white border-[3px] border-black flex items-center justify-center font-black text-2xl hover:bg-black hover:text-white transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+            className="w-10 h-10 bg-white border-[3px] border-black flex items-center justify-center font-black text-xl hover:bg-black hover:text-white transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
             title="Go Back"
           >
             ↩
           </button>
-          <h1 className="text-4xl md:text-5xl font-black text-black uppercase text-center tracking-tighter flex-1">
+          <h1 className="text-3xl md:text-4xl font-black text-black uppercase text-center tracking-tighter flex-1">
             CREATE SPACE
           </h1>
         </div>
@@ -63,10 +63,10 @@ export default function CreateSpace() {
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-black mb-2 font-black uppercase text-lg">Space Name</label>
+              <label className="block text-black mb-2 font-black uppercase text-base">Space Name</label>
               <input
                 type="text"
-                className="w-full bg-[#FDFBF7] border-[3px] border-black rounded-none px-3 py-3 text-black font-black uppercase text-lg focus:outline-none focus:bg-[#FFD700] transition-colors"
+                className="w-full bg-[#FDFBF7] border-[3px] border-black rounded-none px-3 py-2 text-black font-black uppercase text-base focus:outline-none focus:bg-[#FFD700] transition-colors"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="ENTER NAME"
@@ -74,12 +74,12 @@ export default function CreateSpace() {
             </div>
 
             <div>
-              <label className="block text-black mb-2 font-black uppercase text-lg">
+              <label className="block text-black mb-2 font-black uppercase text-base">
                 Dimensions
               </label>
               <div className="relative">
                 <select
-                  className="w-full bg-[#FDFBF7] border-[3px] border-black rounded-none px-3 py-3 text-black font-black uppercase text-lg focus:outline-none focus:bg-[#1E90FF] focus:text-white appearance-none cursor-pointer transition-colors"
+                  className="w-full bg-[#FDFBF7] border-[3px] border-black rounded-none px-3 py-2 text-black font-black uppercase text-base focus:outline-none focus:bg-[#1E90FF] focus:text-white appearance-none cursor-pointer transition-colors"
                   value={dimensions}
                   onChange={(e) => setDimensions(e.target.value)}
                 >
@@ -95,7 +95,7 @@ export default function CreateSpace() {
           </div>
 
           <div>
-            <label className="block text-black mb-4 font-black uppercase text-lg border-t-[4px] border-black pt-4">
+            <label className="block text-black mb-4 font-black uppercase text-base border-t-[4px] border-black pt-4">
               Select Arena Vibe
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -123,7 +123,7 @@ export default function CreateSpace() {
           <button
             onClick={handleCreate}
             disabled={isCreating || !name}
-            className="w-full py-4 bg-[#FF4500] border-[4px] border-black rounded-none text-white text-2xl font-black uppercase hover:bg-black hover:text-white transition-colors mt-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 bg-[#FF4500] border-[4px] border-black rounded-none text-white text-xl font-black uppercase hover:bg-black hover:text-white transition-colors mt-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isCreating ? "WAIT..." : "LAUNCH"}
           </button>

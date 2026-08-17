@@ -127,16 +127,16 @@ export default function ManageSpace() {
     <div className="min-h-screen bg-[#FDFBF7] py-12 px-4 font-sans relative overflow-hidden">
       <div className="absolute bottom-0 right-0 w-full h-1/3 bg-[#FFD700] border-t-[6px] border-black -z-10"></div>
       
-      <div className="max-w-4xl mx-auto relative z-10">
+      <div className="max-w-2xl mx-auto relative z-10">
         <div className="flex gap-4 items-center mb-10 transform -rotate-1">
           <button
             onClick={() => navigate(-1)}
-            className="w-16 h-16 bg-white border-[4px] border-black flex items-center justify-center font-black text-3xl hover:bg-black hover:text-white transition-colors shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] z-20 relative"
+            className="w-12 h-12 bg-white border-[4px] border-black flex items-center justify-center font-black text-2xl hover:bg-black hover:text-white transition-colors shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] z-20 relative"
             title="Go Back"
           >
             ↩
           </button>
-          <h1 className="text-4xl md:text-5xl font-black text-black uppercase tracking-tighter bg-white border-[4px] border-black inline-block px-5 py-3 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] m-0">
+          <h1 className="text-3xl md:text-4xl font-black text-black uppercase tracking-tighter bg-white border-[4px] border-black inline-block px-4 py-2 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] m-0">
             MANAGE SPACE:<br/><span className="text-[#1E90FF]">{space?.name}</span>
           </h1>
         </div>
@@ -145,7 +145,7 @@ export default function ManageSpace() {
           <div className="bg-white border-[4px] border-black p-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] relative h-fit">
             <div className="absolute top-0 right-0 w-8 h-8 bg-[#32CD32] border-l-[4px] border-b-[4px] border-black"></div>
             
-            <h2 className="text-2xl font-black text-black mb-6 uppercase border-b-[4px] border-black pb-3 inline-block">
+            <h2 className="text-xl font-black text-black mb-6 uppercase border-b-[4px] border-black pb-3 inline-block">
               CHANGE VIBE
             </h2>
 
@@ -173,7 +173,7 @@ export default function ManageSpace() {
             <button
               onClick={handleUpdateVibe}
               disabled={isUpdatingVibe}
-              className={`w-full py-3 border-[3px] border-black text-black text-lg font-black uppercase hover:bg-black hover:text-white transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 ${
+              className={`w-full py-2 bg-[#FFD700] border-[4px] border-black rounded-none text-black text-base font-black uppercase hover:bg-black hover:text-white transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 ${
                 vibeSuccess ? "bg-[#32CD32]" : "bg-[#FFD700]"
               }`}
             >
@@ -184,7 +184,7 @@ export default function ManageSpace() {
           <div className="bg-white border-[4px] border-black p-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] relative h-fit">
             <div className="absolute top-0 right-0 w-8 h-8 bg-[#FF4500] border-l-[4px] border-b-[4px] border-black"></div>
             
-            <h2 className="text-2xl font-black text-black mb-6 uppercase border-b-[4px] border-black pb-3 inline-block">
+            <h2 className="text-xl font-black text-black mb-6 uppercase border-b-[4px] border-black pb-3 inline-block">
               BANNED USERS
             </h2>
             
@@ -197,12 +197,12 @@ export default function ManageSpace() {
                 {space?.bannedUsers.map((user) => (
                   <li
                     key={user.id}
-                    className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-[#FDFBF7] border-[3px] border-black p-4 hover:bg-[#FFD700] transition-colors gap-3"
+                    className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-[#FDFBF7] border-[3px] border-black p-3 hover:bg-[#FFD700] transition-colors gap-3"
                   >
-                    <span className="text-lg font-black text-black uppercase tracking-tight">{user.username}</span>
+                    <span className="font-black uppercase text-base truncate pr-2">{user.username}</span>
                     <button
                       onClick={() => handleUnban(user.username)}
-                      className="w-full sm:w-auto px-4 py-2 bg-[#32CD32] border-[3px] border-black text-black text-sm font-black uppercase hover:bg-black hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                      className="bg-[#32CD32] border-[3px] border-black px-3 py-1 font-black text-xs uppercase hover:bg-black hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                     >
                       UNBAN
                     </button>

@@ -67,22 +67,22 @@ export default function AvatarSelection() {
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] py-12 px-4 font-sans flex flex-col items-center">
-      <div className="max-w-4xl mx-auto w-full relative">
-        <div className="absolute -top-4 -right-4 w-16 h-16 bg-[#FF00FF] border-[4px] border-black -z-10 rotate-45"></div>
-        <div className="flex gap-4 items-center justify-center mb-12">
+      <div className="max-w-2xl mx-auto w-full relative">
+        <div className="absolute -top-4 -right-4 w-12 h-12 bg-[#FF00FF] border-[4px] border-black -z-10 rotate-45"></div>
+        <div className="flex gap-4 items-center justify-center mb-8">
           <button
             onClick={() => navigate(-1)}
-            className="w-16 h-16 bg-white border-[4px] border-black flex items-center justify-center font-black text-3xl hover:bg-black hover:text-white transition-colors shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+            className="w-12 h-12 bg-white border-[4px] border-black flex items-center justify-center font-black text-2xl hover:bg-black hover:text-white transition-colors shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
             title="Go Back"
           >
             ↩
           </button>
-          <h1 className="text-4xl md:text-5xl font-black text-center text-black uppercase border-[4px] border-black bg-[#FFD700] p-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] tracking-tighter flex-1">
+          <h1 className="text-3xl md:text-4xl font-black text-center text-black uppercase border-[4px] border-black bg-[#FFD700] p-3 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] tracking-tighter flex-1">
             CHOOSE AVATAR
           </h1>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
+        <div className="grid grid-cols-3 md:grid-cols-4 gap-4 mb-8">
           {avatars.map((avatar) => (
             <div
               key={avatar.id}
@@ -94,14 +94,14 @@ export default function AvatarSelection() {
               <img
                 src={avatar.imageUrl.startsWith("procedural:") ? generateProceduralDataURL(avatar.imageUrl) : avatar.imageUrl}
                 alt={avatar.name}
-                className="w-full flex-1 object-contain p-4"
+                className="w-full flex-1 object-contain p-2"
                 style={{ imageRendering: "pixelated" }}
               />
-              <div className={`w-full text-center border-t-[4px] border-black text-lg py-2 font-black uppercase tracking-tight ${selectedAvatar === avatar.id ? "bg-black text-white" : "bg-white text-black"}`}>
+              <div className={`w-full text-center border-t-[4px] border-black text-sm py-1 font-black uppercase tracking-tight ${selectedAvatar === avatar.id ? "bg-black text-white" : "bg-white text-black"}`}>
                 {avatar.name}
               </div>
               {selectedAvatar === avatar.id && (
-                <div className="absolute top-0 right-0 bg-[#FFD700] text-black font-black px-2 py-1 text-xs border-b-[4px] border-l-[4px] border-black">
+                <div className="absolute top-0 right-0 bg-[#FFD700] text-black font-black px-1 py-1 text-[10px] border-b-[4px] border-l-[4px] border-black">
                   [SET]
                 </div>
               )}
@@ -113,9 +113,9 @@ export default function AvatarSelection() {
           <button
             onClick={handleSave}
             disabled={!selectedAvatar || isSaving}
-            className={`px-8 py-4 text-xl font-black rounded-none uppercase border-[4px] border-black ${
+            className={`px-6 py-3 text-lg font-black rounded-none uppercase border-[4px] border-black ${
               selectedAvatar
-                ? "bg-[#32CD32] hover:bg-black hover:text-white text-black cursor-pointer shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+                ? "bg-[#32CD32] hover:bg-black hover:text-white text-black cursor-pointer shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
             }`}
           >
