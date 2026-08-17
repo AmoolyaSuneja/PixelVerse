@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { drawProceduralCharacter, generateProceduralDataURL } from "../utils/SpriteGenerator";
 import { useAvatar } from "../contexts/AvatarsContext";
 import { useAuth } from "../contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { drawBackground } from "../utils/MapGenerator";
 // Removed lucide-react per brutalist rules
@@ -37,7 +36,6 @@ export const Arena = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
-  const navigate = useNavigate();
   const { avatars, fetchAvatars } = useAvatar();
   const { token, isLoading } = useAuth();
   const [loadedImages, setLoadedImages] = useState<
