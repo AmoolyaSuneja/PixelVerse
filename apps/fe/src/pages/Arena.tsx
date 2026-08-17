@@ -8,7 +8,7 @@ import { drawBackground } from "../utils/MapGenerator";
 // Removed lucide-react per brutalist rules
 
 // --- Constants ---
-const AVATAR_SIZE = 80;
+const AVATAR_SIZE = 48;
 const PARTICLE_COUNT = 100;
 const TRAIL_LENGTH = 20;
 
@@ -1076,7 +1076,7 @@ export const Arena = () => {
 
         <div className="flex-1 flex gap-4 overflow-hidden relative">
           {/* LEFT PANEL: Chat */}
-          <div className="w-80 flex flex-col gap-4 z-10">
+          <div className="w-64 flex flex-col gap-4 z-10">
             <div className="bg-[#1E90FF] border-[6px] border-black rounded-none p-4 flex-1 flex flex-col shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
               <h3 className="font-black text-white mb-4 text-xl tracking-tighter uppercase border-b-[4px] border-black pb-2">Global Chat</h3>
               <div
@@ -1343,7 +1343,7 @@ export const Arena = () => {
           </div>
 
           {/* RIGHT PANEL: Nearby Users */}
-          <div className="w-72 bg-[#FF4500] border-[6px] border-black rounded-none p-4 flex flex-col shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] z-10">
+          <div className="w-56 bg-[#FF4500] border-[6px] border-black rounded-none p-4 flex flex-col shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] z-10">
             <h3 className="font-black text-white mb-4 text-xl tracking-tighter uppercase flex items-center gap-2 border-b-[4px] border-black pb-2">
               <span className="w-4 h-4 bg-[#32CD32] border-[4px] border-black inline-block"></span>
               Nearby Players
