@@ -136,12 +136,12 @@ export default function Dashboard() {
               <p className="text-sm font-bold mt-2">CREATE ONE TO START</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-[160px]">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {spaces.map((space, i) => (
                 <div
                   key={space.id}
-                  className={`bg-white border-[3px] border-black p-4 flex flex-col relative transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${
-                    i % 3 === 0 ? "bg-[#FF4500] text-white lg:col-span-2 lg:row-span-2" :
+                  className={`bg-white border-[3px] border-black p-4 flex flex-col relative transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] min-h-[160px] ${
+                    i % 3 === 0 ? "bg-[#FF4500] text-white" :
                     i % 3 === 1 ? "bg-[#1E90FF] text-white" :
                     "bg-white text-black hover:bg-[#FFD700]"
                   }`}
