@@ -9,6 +9,134 @@ export const drawBackground = (
   ctx.clearRect(0, 0, width, height);
   const GRID_SIZE = 50;
 
+  // Helper to get pseudo-random deterministic positions based on index
+  const getPos = (i: number, maxW: number, maxH: number) => {
+    const x = Math.abs(Math.sin(i * 1234.56)) * maxW;
+    const y = Math.abs(Math.cos(i * 7890.12)) * maxH;
+    return { x, y };
+  };
+
+  const drawProp = (type: string, x: number, y: number) => {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = "#000000";
+    ctx.lineJoin = "round";
+    
+    switch (type) {
+      case "desk":
+        // Desk
+        ctx.fillStyle = "#8B4513";
+        ctx.fillRect(-30, -10, 60, 20);
+        ctx.strokeRect(-30, -10, 60, 20);
+        // Computer Monitor
+        ctx.fillStyle = "#A9A9A9";
+        ctx.fillRect(-15, -25, 30, 15);
+        ctx.strokeRect(-15, -25, 30, 15);
+        // Screen
+        ctx.fillStyle = "#1E90FF";
+        ctx.fillRect(-12, -22, 24, 9);
+        break;
+      
+      case "asteroid":
+        ctx.fillStyle = "#696969";
+        ctx.beginPath();
+        ctx.moveTo(-20, -10); ctx.lineTo(-10, -25); ctx.lineTo(15, -20);
+        ctx.lineTo(25, 0); ctx.lineTo(10, 20); ctx.lineTo(-15, 15);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        break;
+
+      case "coral":
+        ctx.fillStyle = "#FF7F50";
+        ctx.beginPath();
+        ctx.moveTo(0, 20); ctx.lineTo(-10, 0); ctx.lineTo(-20, -10);
+        ctx.lineTo(-5, -5); ctx.lineTo(0, -20); ctx.lineTo(5, -5);
+        ctx.lineTo(20, -10); ctx.lineTo(10, 0); ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        break;
+
+      case "volcano":
+        ctx.fillStyle = "#2D0A00";
+        ctx.beginPath();
+        ctx.moveTo(-40, 30); ctx.lineTo(-15, -10);
+        ctx.lineTo(15, -10); ctx.lineTo(40, 30);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        // Lava top
+        ctx.fillStyle = "#FF4500";
+        ctx.beginPath();
+        ctx.moveTo(-15, -10); ctx.lineTo(-5, 0); ctx.lineTo(5, -15);
+        ctx.lineTo(15, -10); ctx.lineTo(0, -5);
+        ctx.fill();
+        break;
+
+      case "server":
+        ctx.fillStyle = "#1A1A1A";
+        ctx.fillRect(-15, -40, 30, 80);
+        ctx.strokeRect(-15, -40, 30, 80);
+        ctx.fillStyle = "#00FF00";
+        ctx.fillRect(-5, -30, 10, 5);
+        ctx.fillRect(-5, -10, 10, 5);
+        ctx.fillRect(-5, 10, 10, 5);
+        break;
+
+      case "tree":
+        ctx.fillStyle = "#8B4513";
+        ctx.fillRect(-5, 10, 10, 20); // Trunk
+        ctx.strokeRect(-5, 10, 10, 20);
+        ctx.fillStyle = "#228B22";
+        ctx.beginPath();
+        ctx.moveTo(-25, 10); ctx.lineTo(0, -30); ctx.lineTo(25, 10);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        break;
+
+      case "snowman":
+        ctx.fillStyle = "#FFFFFF";
+        ctx.beginPath(); ctx.arc(0, 15, 20, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, -10, 15, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        // Nose
+        ctx.fillStyle = "#FFA500";
+        ctx.beginPath(); ctx.moveTo(0, -10); ctx.lineTo(15, -5); ctx.lineTo(0, 0); ctx.fill(); ctx.stroke();
+        break;
+
+      case "cactus":
+        ctx.fillStyle = "#2E8B57";
+        ctx.fillRect(-8, -30, 16, 60);
+        ctx.strokeRect(-8, -30, 16, 60);
+        ctx.fillRect(-20, -10, 12, 12); // Left arm
+        ctx.strokeRect(-20, -10, 12, 12);
+        ctx.fillRect(8, -20, 12, 12); // Right arm
+        ctx.strokeRect(8, -20, 12, 12);
+        break;
+
+      case "pillar":
+        ctx.fillStyle = "#F5F5DC";
+        ctx.fillRect(-15, -40, 30, 80);
+        ctx.strokeRect(-15, -40, 30, 80);
+        ctx.fillRect(-20, -45, 40, 10); // Top
+        ctx.strokeRect(-20, -45, 40, 10);
+        ctx.fillRect(-20, 35, 40, 10); // Bottom
+        ctx.strokeRect(-20, 35, 40, 10);
+        // Lines
+        ctx.beginPath(); ctx.moveTo(-5, -35); ctx.lineTo(-5, 35); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(5, -35); ctx.lineTo(5, 35); ctx.stroke();
+        break;
+
+      case "neon_sign":
+        ctx.fillStyle = "#000000";
+        ctx.fillRect(-25, -15, 50, 30);
+        ctx.strokeStyle = "#FF00FF"; // Neon pink border
+        ctx.strokeRect(-25, -15, 50, 30);
+        ctx.fillStyle = "#00FFFF";
+        ctx.font = "900 12px sans-serif";
+        ctx.fillText("NEON", -16, 4);
+        break;
+    }
+    ctx.restore();
+  };
+
   switch (vibe) {
     case "space": {
       ctx.fillStyle = "#0A0A1A";
@@ -26,7 +154,15 @@ export const drawBackground = (
         ctx.arc(x, y, size, 0, Math.PI * 2);
         ctx.fill();
       }
+      }
       ctx.globalAlpha = 1;
+      
+      // Props
+      for (let i = 0; i < 15; i++) {
+        const { x, y } = getPos(i + 1000, width, height);
+        drawProp("asteroid", x, y);
+      }
+      
       break;
     }
     
@@ -59,6 +195,13 @@ export const drawBackground = (
         ctx.arc(startX + wobble, y, size, 0, Math.PI * 2);
         ctx.stroke();
       }
+
+      // Props
+      for (let i = 0; i < 20; i++) {
+        const { x, y } = getPos(i + 2000, width, height);
+        drawProp("coral", x, y);
+      }
+      
       break;
     }
 
@@ -92,6 +235,13 @@ export const drawBackground = (
       for (let y = 0; y <= height; y += GRID_SIZE) {
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
       }
+
+      // Props
+      for (let i = 0; i < 15; i++) {
+        const { x, y } = getPos(i + 3000, width, height);
+        drawProp("volcano", x, y);
+      }
+
       break;
     }
 
@@ -112,12 +262,24 @@ export const drawBackground = (
         ctx.fillText(char, i * 30, y);
       }
       ctx.globalAlpha = 1;
+
+      // Props
+      for (let i = 0; i < 25; i++) {
+        const { x, y } = getPos(i + 4000, width, height);
+        drawProp("server", x, y);
+      }
       break;
     }
 
     case "forest": {
       ctx.fillStyle = "#1A401A";
       ctx.fillRect(0, 0, width, height);
+      
+      // Props
+      for (let i = 0; i < 40; i++) {
+        const { x, y } = getPos(i + 5000, width, height);
+        drawProp("tree", x, y);
+      }
       
       // Grid
       ctx.strokeStyle = "rgba(0, 255, 0, 0.1)";
@@ -163,6 +325,12 @@ export const drawBackground = (
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
       }
 
+      // Props
+      for (let i = 0; i < 20; i++) {
+        const { x, y } = getPos(i + 6000, width, height);
+        drawProp("snowman", x, y);
+      }
+
       ctx.fillStyle = "#FFFFFF";
       for (let i = 0; i < 100; i++) {
         const speed = (Math.sin(i * 100) * 0.5 + 0.5) * 100 + 50;
@@ -181,6 +349,12 @@ export const drawBackground = (
     case "desert": {
       ctx.fillStyle = "#EDC9AF";
       ctx.fillRect(0, 0, width, height);
+      
+      // Props
+      for (let i = 0; i < 30; i++) {
+        const { x, y } = getPos(i + 7000, width, height);
+        drawProp("cactus", x, y);
+      }
       
       // Heat waves
       ctx.fillStyle = "rgba(255, 140, 0, 0.1)";
@@ -208,6 +382,12 @@ export const drawBackground = (
       ctx.fillStyle = "#87CEEB";
       ctx.fillRect(0, 0, width, height);
       
+      // Props
+      for (let i = 0; i < 15; i++) {
+        const { x, y } = getPos(i + 8000, width, height);
+        drawProp("pillar", x, y);
+      }
+      
       ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
       for (let i = 0; i < 15; i++) {
         const speed = (Math.sin(i * 15) * 0.5 + 0.5) * 50 + 20;
@@ -228,6 +408,12 @@ export const drawBackground = (
     case "cyberpunk": {
       ctx.fillStyle = "#0A001F";
       ctx.fillRect(0, 0, width, height);
+      
+      // Props
+      for (let i = 0; i < 20; i++) {
+        const { x, y } = getPos(i + 9000, width, height);
+        drawProp("neon_sign", x, y);
+      }
       
       // Perspective lines
       ctx.strokeStyle = "#FF00FF";
@@ -274,6 +460,12 @@ export const drawBackground = (
         ctx.moveTo(0, y);
         ctx.lineTo(width, y);
         ctx.stroke();
+      }
+
+      // Props
+      for (let i = 0; i < 30; i++) {
+        const { x, y } = getPos(i + 10000, width, height);
+        drawProp("desk", x, y);
       }
       break;
     }

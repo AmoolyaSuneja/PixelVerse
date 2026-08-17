@@ -42,21 +42,21 @@ export const drawProceduralCharacter = (
   direction: string
 ) => {
   const parts = seedId.split(":");
-  const id = parts.length > 1 ? parts[1] : "male_1";
+  const id = parts.length > 1 ? parts[1] : "red";
   
-  // Define simple vibrant palettes
+  // Define vibrant palettes based on distinct colors
   const palettes: Record<string, { body: string; shadow: string; visor: string; visorHighlight: string; backpack: string }> = {
-    "male_1": { body: "#C51111", shadow: "#7A0838", visor: "#E5F0F9", visorHighlight: "#90AFC5", backpack: "#8B0000" }, // Red
-    "male_2": { body: "#132ED1", shadow: "#09158E", visor: "#E5F0F9", visorHighlight: "#90AFC5", backpack: "#0000D3" }, // Blue
-    "male_3": { body: "#F5F557", shadow: "#C38822", visor: "#E5F0F9", visorHighlight: "#90AFC5", backpack: "#C3C300" }, // Yellow
-    "male_4": { body: "#F07D0D", shadow: "#B33E15", visor: "#E5F0F9", visorHighlight: "#90AFC5", backpack: "#B35A00" }, // Orange
-    "male_5": { body: "#117F2D", shadow: "#0A4D2E", visor: "#E5F0F9", visorHighlight: "#90AFC5", backpack: "#005900" }, // Green
-    "female_1": { body: "#38FEDC", shadow: "#24A8BE", visor: "#E5F0F9", visorHighlight: "#90AFC5", backpack: "#00A8A8" }, // Cyan
-    "female_2": { body: "#6B2FBB", shadow: "#3B177C", visor: "#E5F0F9", visorHighlight: "#90AFC5", backpack: "#4B0082" }, // Purple
-    "female_3": { body: "#ED54BA", shadow: "#AB2BAD", visor: "#E5F0F9", visorHighlight: "#90AFC5", backpack: "#D12A9E" }, // Pink
+    "red": { body: "#C51111", shadow: "#7A0838", visor: "#E5F0F9", visorHighlight: "#90AFC5", backpack: "#8B0000" },
+    "blue": { body: "#132ED1", shadow: "#09158E", visor: "#E5F0F9", visorHighlight: "#90AFC5", backpack: "#0000D3" },
+    "yellow": { body: "#F5F557", shadow: "#C38822", visor: "#E5F0F9", visorHighlight: "#90AFC5", backpack: "#C3C300" },
+    "orange": { body: "#F07D0D", shadow: "#B33E15", visor: "#E5F0F9", visorHighlight: "#90AFC5", backpack: "#B35A00" },
+    "green": { body: "#117F2D", shadow: "#0A4D2E", visor: "#E5F0F9", visorHighlight: "#90AFC5", backpack: "#005900" },
+    "cyan": { body: "#38FEDC", shadow: "#24A8BE", visor: "#E5F0F9", visorHighlight: "#90AFC5", backpack: "#00A8A8" },
+    "purple": { body: "#6B2FBB", shadow: "#3B177C", visor: "#E5F0F9", visorHighlight: "#90AFC5", backpack: "#4B0082" },
+    "pink": { body: "#ED54BA", shadow: "#AB2BAD", visor: "#E5F0F9", visorHighlight: "#90AFC5", backpack: "#D12A9E" },
   };
 
-  const palette = palettes[id] || palettes["male_1"];
+  const palette = palettes[id] || palettes["red"];
   
   ctx.save();
   ctx.translate(x, y);

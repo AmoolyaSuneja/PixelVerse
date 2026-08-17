@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import axios from "axios";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface BannedUser {
   id: string;
@@ -33,12 +34,14 @@ const VIBES = [
 export default function ManageSpace() {
   const { spaceId } = useParams<{ spaceId: string }>();
   const { token } = useAuth();
+  const navigate = useNavigate();
   const [space, setSpace] = useState<SpaceDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [vibe, setVibe] = useState("grid");
   const [isUpdatingVibe, setIsUpdatingVibe] = useState(false);
   const [vibeSuccess, setVibeSuccess] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchSpaceDetails = async () => {
@@ -102,6 +105,23 @@ export default function ManageSpace() {
       console.error("Failed to update vibe", err);
     } finally {
       setIsUpdatingVibe(false);
+    }
+  };
+
+  const handleDeleteSpace = async () => {
+    if (!window.confirm("ARE YOU SURE YOU WANT TO DELETE THIS SPACE? THIS CANNOT BE UNDONE.")) return;
+    
+    setIsDeleting(true);
+    try {
+      await axios.delete(`${BACKEND_URL}/api/v1/space/${spaceId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      navigate("/dashboard");
+    } catch (err) {
+      console.error("Failed to delete space", err);
+      alert("FAILED TO DELETE SPACE");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -200,6 +220,16 @@ export default function ManageSpace() {
               </ul>
             )}
           </div>
+        </div>
+
+        <div className="mt-12 text-center">
+          <button
+            onClick={handleDeleteSpace}
+            disabled={isDeleting}
+            className="px-8 py-4 bg-[#FF0000] border-[4px] border-black text-white text-2xl font-black uppercase hover:bg-black transition-colors shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50"
+          >
+            {isDeleting ? "DELETING..." : "DELETE SPACE"}
+          </button>
         </div>
       </div>
     </div>
