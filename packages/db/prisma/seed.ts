@@ -9,14 +9,14 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 const DEFAULT_AVATARS = [
-  { name: "Red Hero", imageUrl: "procedural:red" },
-  { name: "Blue Mage", imageUrl: "procedural:blue" },
-  { name: "Green Rogue", imageUrl: "procedural:green" },
-  { name: "Yellow Knight", imageUrl: "procedural:yellow" },
-  { name: "Purple Ninja", imageUrl: "procedural:purple" },
-  { name: "Orange Monk", imageUrl: "procedural:orange" },
-  { name: "Pink Bard", imageUrl: "procedural:pink" },
-  { name: "Cyan Cleric", imageUrl: "procedural:cyan" },
+  { name: "Pink Hero", imageUrl: "procedural:male_1" },
+  { name: "White Mage", imageUrl: "procedural:male_2" },
+  { name: "Gold Rogue", imageUrl: "procedural:male_3" },
+  { name: "Orange Knight", imageUrl: "procedural:male_4" },
+  { name: "Neon Monk", imageUrl: "procedural:male_5" },
+  { name: "Cyan Cleric", imageUrl: "procedural:female_1" },
+  { name: "Purple Bard", imageUrl: "procedural:female_2" },
+  { name: "Deep Pink Ninja", imageUrl: "procedural:female_3" },
 ];
 
 async function main() {

@@ -128,156 +128,63 @@ export class User {
       try {
         const parsedData = JSON.parse(data.toString());
         switch (parsedData.type) {
-          case "join":
-          const spaceId = parsedData.payload.spaceId;
-          const token = parsedData.payload.token;
-          const userId = (
-            jwt.verify(token, sanitizedConfig.JWT_SECRET) as JwtPayload
-          ).username;
-          if (!userId) {
-            this.ws.close();
-            return;
-          }
-
-          this.userId = userId;
-          const space = await client.space.findFirst({
-            where: { id: spaceId },
-          });
-
-          if (!space) {
-            this.ws.close();
-            return;
-          }
-          if (space.bannedUsers.includes(userId)) {
-            this.ws.send(
-              JSON.stringify({
-                type: "join-rejected",
-                payload: { reason: "You are banned from this space." },
-              })
-            );
-            this.ws.close();
-            return;
-          }
-
-          this.spaceId = spaceId;
-          RoomManager.getInstance().addUser(spaceId, this);
-          const existingUsers =
-            RoomManager.getInstance().rooms.get(spaceId)?.length || 0;
-          this.x = 5 + existingUsers;
-          this.y = 5 + existingUsers;
-
-          const roomCalls = RoomManager.getInstance().ongoingCalls.get(spaceId) || new Map();
-          this.send({
-            type: "space-joined",
-            payload: {
-              id: this.id,
-              userId: this.userId,
-              spawn: { x: this.x, y: this.y },
-              users:
-                RoomManager.getInstance()
-                  .rooms.get(spaceId)
-                  ?.filter((x) => x.id !== this.id)
-                  ?.map((u) => ({ id: u.id, userId: u.userId, x: u.x, y: u.y })) ?? [],
-              ongoingCalls: Array.from(roomCalls.entries()),
-            },
-          });
-
-          RoomManager.getInstance().broadcast(
-            {
-              type: "user-joined",
-              payload: { id: this.id, userId: this.userId, x: this.x, y: this.y },
-            },
-            this,
-            this.spaceId!
-          );
-          break;
-
-        case "chat-message":
-          const message = parsedData.payload.message;
-          if (parsedData.payload.isGlobal) {
-            const containsProfanity = message && bannedWords.some((word) =>
-              message.toLowerCase().includes(word.toLowerCase())
-            );
-
-            try {
-              await client.chatMessage.create({
-                data: {
-                  spaceId: this.spaceId!,
-                  userId: this.userId!,
-                  message: message,
-                },
-              });
-            } catch (dbError) {
-              console.error("Failed to save chat message to DB:", dbError);
-              // We still want to broadcast the message even if DB saving fails
-            }
-
-            if (containsProfanity) {
-              this.violationCount++;
-              if (this.violationCount >= 3) {
-                this.kick();
-              } else {
-                this.send({
-                  type: "chat-warning",
-                  payload: {
-                    message: `Warning: Inappropriate content detected. Violation ${this.violationCount}/3`,
-                  },
-                });
-              }
+          case "join": {
+            const spaceId = parsedData.payload.spaceId;
+            const token = parsedData.payload.token;
+            const userId = (
+              jwt.verify(token, sanitizedConfig.JWT_SECRET) as JwtPayload
+            ).username;
+            if (!userId) {
+              this.ws.close();
               return;
             }
 
-            RoomManager.getInstance().broadcastToAll(
-              {
-                type: "chat-message",
-                payload: {
-                  userId: this.userId!,
-                  message: message,
-                  isGlobal: true,
-                },
-              },
-              this.spaceId!
-            );
-          } else {
-            const recipientId = parsedData.payload.recipient;
-            const recipient = RoomManager.getInstance()
-              .rooms.get(this.spaceId!)
-              ?.find((u) => u.userId === recipientId);
-            if (recipient) {
-              recipient.send({
-                type: "chat-message",
-                payload: {
-                  userId: this.userId!,
-                  message: message,
-                  isGlobal: false,
-                },
-              });
+            this.userId = userId;
+            const space = await client.space.findFirst({
+              where: { id: spaceId },
+            });
+
+            if (!space) {
+              this.ws.close();
+              return;
             }
-          }
-          break;
+            if (space.bannedUsers.includes(userId)) {
+              this.ws.send(
+                JSON.stringify({
+                  type: "join-rejected",
+                  payload: { reason: "You are banned from this space." },
+                })
+              );
+              this.ws.close();
+              return;
+            }
 
-        case "move":
-          const moveX = parseFloat(parsedData.payload.x);
-          const moveY = parseFloat(parsedData.payload.y);
-          
-          // Relaxed validation for continuous pixel movement
-          const distance = Math.sqrt(
-            Math.pow(this.x - moveX, 2) + Math.pow(this.y - moveY, 2)
-          );
-          
-          // Allow up to 1.5 units of distance per network tick to prevent teleporting
-          if (distance <= 1.5) {
-            this.x = moveX;
-            this.y = moveY;
+            this.spaceId = spaceId;
+            RoomManager.getInstance().addUser(spaceId, this);
+            const existingUsers =
+              RoomManager.getInstance().rooms.get(spaceId)?.length || 0;
+            this.x = 5 + existingUsers;
+            this.y = 5 + existingUsers;
 
+            const roomCalls = RoomManager.getInstance().ongoingCalls.get(spaceId) || new Map();
             this.send({
-              type: "movement",
-              payload: { id: this.id, userId: this.userId, x: this.x, y: this.y },
+              type: "space-joined",
+              payload: {
+                id: this.id,
+                userId: this.userId,
+                spawn: { x: this.x, y: this.y },
+                users:
+                  RoomManager.getInstance()
+                    .rooms.get(spaceId)
+                    ?.filter((x) => x.id !== this.id)
+                    ?.map((u) => ({ id: u.id, userId: u.userId, x: u.x, y: u.y })) ?? [],
+                ongoingCalls: Array.from(roomCalls.entries()),
+              },
             });
 
             RoomManager.getInstance().broadcast(
               {
-                type: "movement",
+                type: "user-joined",
                 payload: { id: this.id, userId: this.userId, x: this.x, y: this.y },
               },
               this,
@@ -286,22 +193,121 @@ export class User {
             break;
           }
 
-          this.send({
-            type: "movement-rejected",
-            payload: { x: this.x, y: this.y },
-          });
-          break;
+          case "chat-message": {
+            const message = parsedData.payload.message;
+            if (parsedData.payload.isGlobal) {
+              const containsProfanity = message && bannedWords.some((word) =>
+                message.toLowerCase().includes(word.toLowerCase())
+              );
 
-        case "call-started":
-          const p1 = parsedData.payload.user1;
-          const p2 = parsedData.payload.user2;
-          RoomManager.getInstance().startCall(this.spaceId!, p1, p2);
-          break;
-        case "call-ended":
-          const u1 = parsedData.payload.user1;
-          const u2 = parsedData.payload.user2;
-          RoomManager.getInstance().endCall(this.spaceId!, u1, u2);
-          break;
+              try {
+                await client.chatMessage.create({
+                  data: {
+                    spaceId: this.spaceId!,
+                    userId: this.userId!,
+                    message: message,
+                  },
+                });
+              } catch (dbError) {
+                console.error("Failed to save chat message to DB:", dbError);
+                // We still want to broadcast the message even if DB saving fails
+              }
+
+              if (containsProfanity) {
+                this.violationCount++;
+                if (this.violationCount >= 3) {
+                  this.kick();
+                } else {
+                  this.send({
+                    type: "chat-warning",
+                    payload: {
+                      message: `Warning: Inappropriate content detected. Violation ${this.violationCount}/3`,
+                    },
+                  });
+                }
+                return;
+              }
+
+              RoomManager.getInstance().broadcastToAll(
+                {
+                  type: "chat-message",
+                  payload: {
+                    userId: this.userId!,
+                    message: message,
+                    isGlobal: true,
+                  },
+                },
+                this.spaceId!
+              );
+            } else {
+              const recipientId = parsedData.payload.recipient;
+              const recipient = RoomManager.getInstance()
+                .rooms.get(this.spaceId!)
+                ?.find((u) => u.userId === recipientId);
+              if (recipient) {
+                recipient.send({
+                  type: "chat-message",
+                  payload: {
+                    userId: this.userId!,
+                    message: message,
+                    isGlobal: false,
+                  },
+                });
+              }
+            }
+            break;
+          }
+
+          case "move": {
+            const moveX = parseFloat(parsedData.payload.x);
+            const moveY = parseFloat(parsedData.payload.y);
+            
+            // Relaxed validation for continuous pixel movement
+            const distance = Math.sqrt(
+              Math.pow(this.x - moveX, 2) + Math.pow(this.y - moveY, 2)
+            );
+            
+            // Allow up to 1.5 units of distance per network tick to prevent teleporting
+            if (distance <= 1.5) {
+              this.x = moveX;
+              this.y = moveY;
+
+              this.send({
+                type: "movement",
+                payload: { id: this.id, userId: this.userId, x: this.x, y: this.y },
+              });
+
+              RoomManager.getInstance().broadcast(
+                {
+                  type: "movement",
+                  payload: { id: this.id, userId: this.userId, x: this.x, y: this.y },
+                },
+                this,
+                this.spaceId!
+              );
+              break;
+            }
+
+            this.send({
+              type: "movement-rejected",
+              payload: { x: this.x, y: this.y },
+            });
+            break;
+          }
+
+          case "call-started": {
+            const p1 = parsedData.payload.user1;
+            const p2 = parsedData.payload.user2;
+            RoomManager.getInstance().startCall(this.spaceId!, p1, p2);
+            break;
+          }
+
+          case "call-ended": {
+            const u1 = parsedData.payload.user1;
+            const u2 = parsedData.payload.user2;
+            RoomManager.getInstance().endCall(this.spaceId!, u1, u2);
+            break;
+          }
         }
       } catch (err) {
         console.error("Error processing websocket message:", err);
