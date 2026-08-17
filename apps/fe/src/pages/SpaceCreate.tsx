@@ -5,9 +5,23 @@ import axios from "axios";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8080";
 
+const VIBES = [
+  { id: "grid", name: "Neon Grid", color: "#FF00FF" },
+  { id: "space", name: "Deep Space", color: "#1A1A40" },
+  { id: "ocean", name: "Ocean Floor", color: "#006699" },
+  { id: "lava", name: "Lava Pit", color: "#FF3300" },
+  { id: "matrix", name: "Digital Rain", color: "#00FF00" },
+  { id: "forest", name: "Mystic Forest", color: "#228B22" },
+  { id: "snow", name: "Ice Cavern", color: "#ADD8E6" },
+  { id: "desert", name: "Scorched Desert", color: "#EDC9AF" },
+  { id: "clouds", name: "Cloud Kingdom", color: "#87CEEB" },
+  { id: "cyberpunk", name: "Cyberpunk", color: "#9400D3" },
+];
+
 export default function CreateSpace() {
   const [name, setName] = useState("");
   const [dimensions, setDimensions] = useState("100x100");
+  const [vibe, setVibe] = useState("grid");
   const [isCreating, setIsCreating] = useState(false);
   const { token } = useAuth();
   const navigate = useNavigate();
@@ -17,7 +31,7 @@ export default function CreateSpace() {
     try {
       const response = await axios.post(
         `${BACKEND_URL}/api/v1/space`,
-        { name, dimensions },
+        { name, dimensions, thumbnail: vibe },
         { headers: { Authorization: `Bearer ${token}` } },
       );
       navigate(`/space/?spaceId=${response.data.spaceId}`);
@@ -29,50 +43,78 @@ export default function CreateSpace() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center p-4 font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center p-4 font-sans relative overflow-hidden py-12">
       <div className="absolute top-20 left-20 w-64 h-64 bg-[#32CD32] border-[6px] border-black rounded-full z-0 translate-x-[-50%] translate-y-[-50%]"></div>
       
-      <div className="relative z-10 bg-white border-[4px] border-black p-8 max-w-sm w-full shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]">
+      <div className="relative z-10 bg-white border-[4px] border-black p-8 max-w-2xl w-full shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]">
         <h1 className="text-4xl md:text-5xl font-black text-black mb-8 uppercase text-center border-b-[4px] border-black pb-4 tracking-tighter">
-          CREATE<br/>SPACE
+          CREATE SPACE
         </h1>
 
         <div className="space-y-6">
-          <div>
-            <label className="block text-black mb-2 font-black uppercase text-lg">Space Name</label>
-            <input
-              type="text"
-              className="w-full bg-[#FDFBF7] border-[3px] border-black rounded-none px-3 py-3 text-black font-black uppercase text-lg focus:outline-none focus:bg-[#FFD700] transition-colors"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="ENTER NAME"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-black mb-2 font-black uppercase text-lg">Space Name</label>
+              <input
+                type="text"
+                className="w-full bg-[#FDFBF7] border-[3px] border-black rounded-none px-3 py-3 text-black font-black uppercase text-lg focus:outline-none focus:bg-[#FFD700] transition-colors"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="ENTER NAME"
+              />
+            </div>
+
+            <div>
+              <label className="block text-black mb-2 font-black uppercase text-lg">
+                Dimensions
+              </label>
+              <div className="relative">
+                <select
+                  className="w-full bg-[#FDFBF7] border-[3px] border-black rounded-none px-3 py-3 text-black font-black uppercase text-lg focus:outline-none focus:bg-[#1E90FF] focus:text-white appearance-none cursor-pointer transition-colors"
+                  value={dimensions}
+                  onChange={(e) => setDimensions(e.target.value)}
+                >
+                  <option value="100x100">100 x 100</option>
+                  <option value="200x200">200 x 200</option>
+                  <option value="300x300">300 x 300</option>
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none border-l-[3px] border-black bg-white">
+                  <span className="font-black text-black">▼</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div>
-            <label className="block text-black mb-2 font-black uppercase text-lg">
-              Dimensions
+            <label className="block text-black mb-4 font-black uppercase text-lg border-t-[4px] border-black pt-4">
+              Select Arena Vibe
             </label>
-            <div className="relative">
-              <select
-                className="w-full bg-[#FDFBF7] border-[3px] border-black rounded-none px-3 py-3 text-black font-black uppercase text-lg focus:outline-none focus:bg-[#1E90FF] focus:text-white appearance-none cursor-pointer transition-colors"
-                value={dimensions}
-                onChange={(e) => setDimensions(e.target.value)}
-              >
-                <option value="100x100">100 x 100</option>
-                <option value="200x200">200 x 200</option>
-                <option value="300x300">300 x 300</option>
-              </select>
-              <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none border-l-[3px] border-black bg-white">
-                <span className="font-black text-black">▼</span>
-              </div>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              {VIBES.map((v) => (
+                <div
+                  key={v.id}
+                  onClick={() => setVibe(v.id)}
+                  className={`cursor-pointer border-[3px] border-black p-2 flex flex-col items-center justify-center aspect-square transition-all ${
+                    vibe === v.id
+                      ? "shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] -translate-y-1 scale-105 ring-4 ring-black"
+                      : "hover:bg-gray-100"
+                  }`}
+                  style={{ backgroundColor: vibe === v.id ? "#FDFBF7" : "white" }}
+                >
+                  <div
+                    className="w-full h-full border-2 border-black mb-2"
+                    style={{ backgroundColor: v.color }}
+                  ></div>
+                  <span className="font-black text-xs uppercase text-center">{v.name}</span>
+                </div>
+              ))}
             </div>
           </div>
 
           <button
             onClick={handleCreate}
-            disabled={isCreating}
-            className="w-full py-4 bg-[#FF4500] border-[4px] border-black rounded-none text-white text-2xl font-black uppercase hover:bg-black hover:text-white transition-colors mt-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+            disabled={isCreating || !name}
+            className="w-full py-4 bg-[#FF4500] border-[4px] border-black rounded-none text-white text-2xl font-black uppercase hover:bg-black hover:text-white transition-colors mt-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isCreating ? "WAIT..." : "LAUNCH"}
           </button>

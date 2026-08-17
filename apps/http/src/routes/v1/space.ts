@@ -23,6 +23,7 @@ spaceRouter.post("/", userMiddleware, async (req: Request, res: Response) => {
         name: parseData.data.name,
         width: parseInt(parseData.data.dimensions.split("x")[0]),
         height: parseInt(parseData.data.dimensions.split("x")[1]),
+        thumbnail: parseData.data.thumbnail,
         creatorId: req.userId as string,
       },
     });
@@ -49,6 +50,7 @@ spaceRouter.post("/", userMiddleware, async (req: Request, res: Response) => {
         name: parseData.data.name,
         width: map.width,
         height: map.height,
+        thumbnail: parseData.data.thumbnail,
         creatorId: req.userId as string,
       },
     });

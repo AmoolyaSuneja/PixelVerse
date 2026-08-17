@@ -17,6 +17,8 @@ import {
   deleteDoc,
   getDoc,
 } from "firebase/firestore";
+import axios from "axios";
+import { drawBackground } from "../utils/MapGenerator";
 // Removed lucide-react per brutalist rules
 
 // --- Constants ---
@@ -76,6 +78,7 @@ export const Arena = () => {
   const [currentUser, setCurrentUser] = useState<any>({});
   const [users, setUsers] = useState(new Map<string, any>());
   const [spaceId, setSpaceId] = useState("");
+  const spaceVibeRef = useRef("grid");
   const [blockedUsers, setBlockedUsers] = useState<Set<string>>(new Set());
   const blockedUsersRef = useRef<Set<string>>(new Set());
   const [hoveredUser, setHoveredUser] = useState<string | null>(null);
@@ -598,6 +601,24 @@ export const Arena = () => {
 
 
   useEffect(() => {
+    if (!token || !spaceId) return;
+    const fetchSpaceDetails = async () => {
+      try {
+        const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8080";
+        const response = await axios.get(`${BACKEND_URL}/api/v1/space/${spaceId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.data.thumbnail) {
+          spaceVibeRef.current = response.data.thumbnail;
+        }
+      } catch (err) {
+        console.error("Error fetching space details:", err);
+      }
+    };
+    fetchSpaceDetails();
+  }, [spaceId, token]);
+
+  useEffect(() => {
     if (isLoading || !token || !spaceId) return;
 
     const wsUrl = import.meta.env.VITE_WS_URL || "ws://localhost:8081";
@@ -965,50 +986,8 @@ export const Arena = () => {
         usersVisual.set(userId, { visualX, visualY });
       });
 
-      // Draw
-      const gradient = ctx.createLinearGradient(
-        0,
-        0,
-        canvas.width,
-        canvas.height,
-      );
-      gradient.addColorStop(0, "#0a192f");
-      gradient.addColorStop(1, "#172a45");
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
-      particles.current.forEach((particle) => {
-        particle.x += particle.speedX;
-        particle.y += particle.speedY;
-        if (
-          particle.x < 0 ||
-          particle.x > canvas.width ||
-          particle.y < 0 ||
-          particle.y > canvas.height
-        ) {
-          particle.x = Math.random() * canvas.width;
-          particle.y = Math.random() * canvas.height;
-        }
-        ctx.beginPath();
-        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      ctx.strokeStyle = `hsla(210, 60%, 50%, ${0.2 + Math.sin(Date.now() / 1000) * 0.1})`;
-      ctx.lineWidth = 1;
-      for (let x = 0; x <= canvas.width; x += GRID_SIZE) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, canvas.height);
-        ctx.stroke();
-      }
-      for (let y = 0; y <= canvas.height; y += GRID_SIZE) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(canvas.width, y);
-        ctx.stroke();
-      }
+      // Draw Background
+      drawBackground(ctx, canvas.width, canvas.height, spaceVibeRef.current, currentTime);
 
       // Draw Main User
       if (currentUser.gridX !== undefined) {
