@@ -1043,7 +1043,7 @@ export const Arena = () => {
   return (
     <div
       ref={containerRef}
-      className="h-full w-full bg-[#FDFBF7] text-black overflow-hidden outline-none flex flex-col font-sans"
+      className="h-screen w-screen bg-[#FDFBF7] text-black overflow-hidden outline-none flex flex-col font-sans p-4 gap-4 box-border relative"
       onKeyDown={handleKeyDown}
       onKeyUp={handleKeyUp}
       tabIndex={0}
@@ -1060,21 +1060,20 @@ export const Arena = () => {
       >
         ↩
       </button>
-      <div className="relative w-full h-full flex flex-col z-10 p-4 gap-4">
-        <div className="flex justify-between items-center bg-[#FFD700] border-[6px] border-black p-4 rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] pl-24">
-          <div className="flex items-center gap-4">
-            <h1 className="text-4xl font-black text-black uppercase tracking-tighter">
-              Pixel Arena
-            </h1>
-          </div>
-          <div className="flex gap-4 items-center">
-            <div className="bg-white px-4 py-2 border-[4px] border-black text-sm font-black uppercase text-black">
-              SPACE: {spaceId}
-            </div>
+      <div className="flex justify-between items-center bg-[#FFD700] border-[6px] border-black p-3 rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] pl-24 flex-shrink-0 z-10">
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl md:text-3xl font-black text-black uppercase tracking-tighter">
+            Pixel Arena
+          </h1>
+        </div>
+        <div className="flex gap-4 items-center">
+          <div className="bg-white px-3 py-1 border-[4px] border-black text-xs md:text-sm font-black uppercase text-black">
+            SPACE: {spaceId}
           </div>
         </div>
+      </div>
 
-        <div className="flex-1 flex gap-4 overflow-hidden relative">
+      <div className="flex-1 flex gap-4 overflow-hidden min-h-0 relative z-10">
           {/* LEFT PANEL: Chat */}
           <div className="w-64 flex flex-col gap-4 z-10">
             <div className="bg-[#1E90FF] border-[6px] border-black rounded-none p-4 flex-1 flex flex-col shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
@@ -1410,6 +1409,5 @@ export const Arena = () => {
           </div>
         </div>
       </div>
-    </div>
   );
 };
