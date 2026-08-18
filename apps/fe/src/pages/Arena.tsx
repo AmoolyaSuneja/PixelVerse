@@ -922,34 +922,11 @@ export const Arena = () => {
 
       // Draw Main User
       if (currentUser.gridX !== undefined) {
-        const avatarStr = avatars.get(currentUser.userId);
-        const image = avatarStr && !avatarStr.startsWith("procedural:")
-          ? loadedImages.get(avatarStr)
-          : defaultAvatarRef.current;
-        
+        const rawAvatar = avatars.get(currentUser.userId);
+        const avatarStr = (rawAvatar && rawAvatar.startsWith("procedural:")) ? rawAvatar : "procedural:cyan_vibrant_astro_0";
         const myState = userAnimState.current.get(currentUser.id) || { moving: false, walkCycle: 0, direction: 'down' };
 
-        if (avatarStr && avatarStr.startsWith("procedural:")) {
-          drawProceduralCharacter(ctx, currentVisualX, currentVisualY, avatarStr, AVATAR_SIZE, myState.walkCycle, myState.direction);
-        } else {
-          // Fallback to DiceBear images if still used
-          ctx.save();
-          ctx.globalCompositeOperation = "lighter";
-          const hologramGradient = ctx.createRadialGradient(currentVisualX, currentVisualY, 0, currentVisualX, currentVisualY, AVATAR_SIZE * 1.5);
-          hologramGradient.addColorStop(0, "hsla(210, 100%, 50%, 0.4)");
-          hologramGradient.addColorStop(1, "hsla(180, 100%, 50%, 0)");
-          ctx.fillStyle = hologramGradient;
-          ctx.beginPath();
-          ctx.arc(currentVisualX, currentVisualY, AVATAR_SIZE + 5, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.globalCompositeOperation = "source-over";
-
-          ctx.beginPath();
-          ctx.arc(currentVisualX, currentVisualY, AVATAR_SIZE / 2, 0, Math.PI * 2);
-          ctx.clip();
-          if (image) ctx.drawImage(image, currentVisualX - AVATAR_SIZE / 2, currentVisualY - AVATAR_SIZE / 2, AVATAR_SIZE, AVATAR_SIZE);
-          ctx.restore();
-        }
+        drawProceduralCharacter(ctx, currentVisualX, currentVisualY, avatarStr, AVATAR_SIZE, myState.walkCycle, myState.direction);
 
         ctx.fillStyle = "#fff";
         ctx.font = "14px Arial";
@@ -962,10 +939,8 @@ export const Arena = () => {
         const user = users.get(id);
         if (!user) return;
         const username = user.userId;
-        const avatarStr = avatars.get(username);
-        const image = avatarStr && !avatarStr.startsWith("procedural:")
-          ? loadedImages.get(avatarStr)
-          : defaultAvatarRef.current;
+        const rawAvatar = avatars.get(username);
+        const avatarStr = (rawAvatar && rawAvatar.startsWith("procedural:")) ? rawAvatar : "procedural:cyan_vibrant_astro_0";
         
         if (usersAnimationRef.current.get(id)?.isMoving) {
           const trail = movementTrails.current.get(id) || [];
@@ -985,14 +960,7 @@ export const Arena = () => {
 
         const otherState = userAnimState.current.get(id) || { moving: false, walkCycle: 0, direction: 'down' };
 
-        if (avatarStr && avatarStr.startsWith("procedural:")) {
-          drawProceduralCharacter(ctx, visual.visualX, visual.visualY, avatarStr, AVATAR_SIZE, otherState.walkCycle, otherState.direction);
-        } else {
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(visual.visualX, visual.visualY, AVATAR_SIZE / 2, 0, Math.PI * 2);
-          ctx.clip();
-          if (image) ctx.drawImage(image, visual.visualX - AVATAR_SIZE / 2, visual.visualY - AVATAR_SIZE / 2, AVATAR_SIZE, AVATAR_SIZE);
+        drawProceduralCharacter(ctx, visual.visualX, visual.visualY, avatarStr, AVATAR_SIZE, otherState.walkCycle, otherState.direction);
           ctx.restore();
         }
         if (hoveredUser === id) {

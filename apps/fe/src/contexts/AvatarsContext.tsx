@@ -28,13 +28,16 @@ export const AvatarProvider = ({ children }: { children: ReactNode }) => {
       }
       const { avatars: avatarData } = await response.json();
 
-      const newAvatars = new Map(avatars);
-      avatarData.forEach(
-        ({ username, avatarId }: { username: string; avatarId: string }) => {
-          newAvatars.set(username, avatarId || "default");
-        },
-      );
-      setAvatars(newAvatars);
+      setAvatars((prevAvatars) => {
+        const newAvatars = new Map(prevAvatars);
+        avatarData.forEach(
+          ({ username, avatarId }: { username: string; avatarId: string }) => {
+            const finalAvatarId = avatarId && avatarId !== "default" ? avatarId : "procedural:cyan_vibrant_astro_0";
+            newAvatars.set(username, finalAvatarId);
+          },
+        );
+        return newAvatars;
+      });
     } catch (error) {
       console.error("Error fetching avatars:", error);
     }
