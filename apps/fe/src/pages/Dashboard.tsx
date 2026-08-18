@@ -17,6 +17,7 @@ export default function Dashboard() {
   const [spaceIdInput, setSpaceIdInput] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [spaceToDelete, setSpaceToDelete] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const { token, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -178,6 +179,17 @@ export default function Dashboard() {
                         className={`flex-1 py-1 border-2 border-black font-black uppercase text-[10px] hover:bg-black hover:text-white transition-colors ${i % 3 !== 2 ? 'bg-white text-black' : 'bg-black text-white hover:bg-white hover:text-black'}`}
                       >
                         ENTER
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(space.id);
+                          setCopiedId(space.id);
+                          setTimeout(() => setCopiedId(null), 2000);
+                        }}
+                        className="px-2 py-1 bg-[#FFD700] text-black border-2 border-black font-black uppercase text-[10px] hover:bg-black hover:text-white transition-colors"
+                        title="Copy Space ID"
+                      >
+                        {copiedId === space.id ? "COPIED" : "COPY ID"}
                       </button>
                       <button
                         onClick={() => navigate(`/manage-space/${space.id}`)}

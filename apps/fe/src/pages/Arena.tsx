@@ -57,6 +57,7 @@ export const Arena = () => {
   const [nearbyUsers, setNearbyUsers] = useState<Set<string>>(new Set());
   const [isKicked, setIsKicked] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
   // --- Chat State ---
   const [globalMessages, setGlobalMessages] = useState<any[]>([]);
   const [privateMessages, setPrivateMessages] = useState<any[]>([]);
@@ -1067,8 +1068,21 @@ export const Arena = () => {
           </h1>
         </div>
         <div className="flex gap-4 items-center">
-          <div className="bg-white px-3 py-1 border-[4px] border-black text-xs md:text-sm font-black uppercase text-black">
-            SPACE: {spaceId}
+          <div className="bg-white px-3 py-1 border-[4px] border-black text-xs md:text-sm font-black uppercase text-black flex items-center gap-2">
+            <span>SPACE: {spaceId}</span>
+            <button
+              onClick={() => {
+                if (spaceId) {
+                  navigator.clipboard.writeText(spaceId);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }
+              }}
+              className="bg-[#FFD700] hover:bg-black hover:text-white text-black border-[2px] border-black px-2 py-0.5 text-xs font-black uppercase transition-colors"
+              title="Copy Space ID"
+            >
+              {copied ? "COPIED!" : "COPY"}
+            </button>
           </div>
         </div>
       </div>
