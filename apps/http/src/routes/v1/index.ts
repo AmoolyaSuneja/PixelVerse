@@ -77,9 +77,12 @@ router.post("/signin", async (req: Request, res: Response) => {
     res.json({
       token,
     });
-  } catch (e) {
-    res.status(400).json({
-      message: "User not found",
+  } catch (error) {
+    // Do not disguise a database/configuration failure as a missing account.
+    // That message sends users down the wrong path when their account exists.
+    console.error("SIGNIN ERROR:", error);
+    res.status(500).json({
+      message: "Unable to sign in right now. Please try again shortly.",
     });
   }
 });

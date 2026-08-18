@@ -47,7 +47,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const initializeAuth = () => {
-      const storedToken = sessionStorage.getItem("token");
+      // Keep the session when the tab or browser is closed. `sessionStorage`
+      // is cleared at the end of a browser session, which made returning users
+      // appear signed out despite having already authenticated.
+      const storedToken =
+        localStorage.getItem("token") ?? sessionStorage.getItem("token");
       if (storedToken) {
         try {
           const decoded = parseJwt(storedToken) as {
@@ -56,13 +60,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           } | null;
 
           if (decoded?.userId && decoded.role) {
+            // Migrate tokens created by earlier versions of the app.
+            localStorage.setItem("token", storedToken);
+            sessionStorage.removeItem("token");
             setUser({ id: decoded.userId, role: decoded.role });
             setToken(storedToken);
           } else {
             throw new Error("Invalid token");
           }
         } catch (error) {
-          sessionStorage.removeItem("token");
+          localStorage.removeItem("token");
           setUser(null);
           setToken(null);
         }
@@ -87,7 +94,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error(data.message || "Login failed");
       }
 
-      sessionStorage.setItem("token", data.token);
+      localStorage.setItem("token", data.token);
       const decoded = parseJwt(data.token) as {
         userId: string;
         role: "User" | "Admin";
@@ -120,7 +127,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // The server returns a session token with the newly created account. This
       // avoids a second request (and another cold-start wait in deployment).
-      sessionStorage.setItem("token", signupData.token);
+      localStorage.setItem("token", signupData.token);
       const decoded = parseJwt(signupData.token) as {
         userId: string;
         role: "User" | "Admin";
@@ -134,7 +141,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = () => {
-    sessionStorage.removeItem("token");
+    localStorage.removeItem("token");
     setUser(null);
     setToken(null);
   };
