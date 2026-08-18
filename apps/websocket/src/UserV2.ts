@@ -9,10 +9,13 @@ type OutgoingMessage = any;
 function getRandomString(length: number) {
   const characters =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
   let result = "";
+
   for (let i = 0; i < length; i++) {
     result += characters.charAt(Math.floor(Math.random() * characters.length));
   }
+
   return result;
 }
 
@@ -109,6 +112,7 @@ const bannedWords = [
 export class User {
   public id: string;
   public userId?: string;
+
   private spaceId?: string;
   private x: number;
   private y: number;
@@ -120,6 +124,7 @@ export class User {
     this.x = 0;
     this.y = 0;
     this.ws = ws;
+
     this.initHandlers();
   }
 
@@ -127,19 +132,23 @@ export class User {
     this.ws.on("message", async (data) => {
       try {
         const parsedData = JSON.parse(data.toString());
+
         switch (parsedData.type) {
           case "join": {
             const spaceId = parsedData.payload.spaceId;
             const token = parsedData.payload.token;
+
             const userId = (
               jwt.verify(token, sanitizedConfig.JWT_SECRET) as JwtPayload
             ).username;
+
             if (!userId) {
               this.ws.close();
               return;
             }
 
             this.userId = userId;
+
             const space = await client.space.findFirst({
               where: { id: spaceId },
             });
@@ -148,57 +157,87 @@ export class User {
               this.ws.close();
               return;
             }
+
             if (space.bannedUsers.includes(userId)) {
-              this.ws.send(
-                JSON.stringify({
-                  type: "join-rejected",
-                  payload: { reason: "You are banned from this space." },
-                })
-              );
+              this.send({
+                type: "join-rejected",
+                payload: {
+                  reason: "You are banned from this space.",
+                },
+              });
+
               this.ws.close();
               return;
             }
 
             this.spaceId = spaceId;
-            RoomManager.getInstance().addUser(spaceId, this);
-            const existingUsers =
-              RoomManager.getInstance().rooms.get(spaceId)?.length || 0;
+
+            const roomManager = RoomManager.getInstance();
+
+            // Get existing users BEFORE adding this user.
+            const existingUsers = roomManager.rooms.get(spaceId)?.length || 0;
+
+            // Set spawn position.
             this.x = 5 + existingUsers;
             this.y = 5 + existingUsers;
 
-            const roomCalls = RoomManager.getInstance().ongoingCalls.get(spaceId) || new Map();
+            // Add user to room.
+            roomManager.addUser(spaceId, this);
+
+            const roomCalls =
+              roomManager.ongoingCalls.get(spaceId) || new Map();
+
+            // Send initial room state to this user.
             this.send({
               type: "space-joined",
               payload: {
                 id: this.id,
                 userId: this.userId,
-                spawn: { x: this.x, y: this.y },
+                spawn: {
+                  x: this.x,
+                  y: this.y,
+                },
                 users:
-                  RoomManager.getInstance()
-                    .rooms.get(spaceId)
+                  roomManager.rooms
+                    .get(spaceId)
                     ?.filter((x) => x.id !== this.id)
-                    ?.map((u) => ({ id: u.id, userId: u.userId, x: u.x, y: u.y })) ?? [],
+                    ?.map((u) => ({
+                      id: u.id,
+                      userId: u.userId,
+                      x: u.x,
+                      y: u.y,
+                    })) ?? [],
                 ongoingCalls: Array.from(roomCalls.entries()),
               },
             });
 
-            RoomManager.getInstance().broadcast(
+            // Notify everyone else that this user joined.
+            roomManager.broadcast(
               {
                 type: "user-joined",
-                payload: { id: this.id, userId: this.userId, x: this.x, y: this.y },
+                payload: {
+                  id: this.id,
+                  userId: this.userId,
+                  x: this.x,
+                  y: this.y,
+                },
               },
               this,
-              this.spaceId!
+              this.spaceId!,
             );
+
             break;
           }
 
           case "chat-message": {
             const message = parsedData.payload.message;
+
             if (parsedData.payload.isGlobal) {
-              const containsProfanity = message && bannedWords.some((word) =>
-                message.toLowerCase().includes(word.toLowerCase())
-              );
+              const containsProfanity =
+                message &&
+                bannedWords.some((word) =>
+                  message.toLowerCase().includes(word.toLowerCase()),
+                );
 
               try {
                 await client.chatMessage.create({
@@ -210,11 +249,13 @@ export class User {
                 });
               } catch (dbError) {
                 console.error("Failed to save chat message to DB:", dbError);
-                // We still want to broadcast the message even if DB saving fails
+
+                // We still broadcast the message even if DB saving fails.
               }
 
               if (containsProfanity) {
                 this.violationCount++;
+
                 if (this.violationCount >= 3) {
                   this.kick();
                 } else {
@@ -225,6 +266,7 @@ export class User {
                     },
                   });
                 }
+
                 return;
               }
 
@@ -237,13 +279,15 @@ export class User {
                     isGlobal: true,
                   },
                 },
-                this.spaceId!
+                this.spaceId!,
               );
             } else {
               const recipientId = parsedData.payload.recipient;
+
               const recipient = RoomManager.getInstance()
                 .rooms.get(this.spaceId!)
                 ?.find((u) => u.userId === recipientId);
+
               if (recipient) {
                 recipient.send({
                   type: "chat-message",
@@ -255,57 +299,78 @@ export class User {
                 });
               }
             }
+
             break;
           }
 
           case "move": {
             const moveX = parseFloat(parsedData.payload.x);
             const moveY = parseFloat(parsedData.payload.y);
-            
-            // Relaxed validation for continuous pixel movement
+
             const distance = Math.sqrt(
-              Math.pow(this.x - moveX, 2) + Math.pow(this.y - moveY, 2)
+              Math.pow(this.x - moveX, 2) + Math.pow(this.y - moveY, 2),
             );
-            
-            // Allow up to 1.5 units of distance per network tick to prevent teleporting
+
+            // Allow up to 1.5 units of movement per network tick.
             if (distance <= 1.5) {
               this.x = moveX;
               this.y = moveY;
 
+              // Send movement confirmation to this user.
               this.send({
                 type: "movement",
-                payload: { id: this.id, userId: this.userId, x: this.x, y: this.y },
+                payload: {
+                  id: this.id,
+                  userId: this.userId,
+                  x: this.x,
+                  y: this.y,
+                },
               });
 
+              // Broadcast movement to everyone else.
               RoomManager.getInstance().broadcast(
                 {
                   type: "movement",
-                  payload: { id: this.id, userId: this.userId, x: this.x, y: this.y },
+                  payload: {
+                    id: this.id,
+                    userId: this.userId,
+                    x: this.x,
+                    y: this.y,
+                  },
                 },
                 this,
-                this.spaceId!
+                this.spaceId!,
               );
+
               break;
             }
 
             this.send({
               type: "movement-rejected",
-              payload: { x: this.x, y: this.y },
+              payload: {
+                x: this.x,
+                y: this.y,
+              },
             });
+
             break;
           }
 
           case "call-started": {
             const p1 = parsedData.payload.user1;
             const p2 = parsedData.payload.user2;
+
             RoomManager.getInstance().startCall(this.spaceId!, p1, p2);
+
             break;
           }
 
           case "call-ended": {
             const u1 = parsedData.payload.user1;
             const u2 = parsedData.payload.user2;
+
             RoomManager.getInstance().endCall(this.spaceId!, u1, u2);
+
             break;
           }
 
@@ -314,18 +379,21 @@ export class User {
           case "webrtc-ice-candidate":
           case "webrtc-decline": {
             const recipientId = parsedData.payload.recipient;
+
             const recipient = RoomManager.getInstance()
               .rooms.get(this.spaceId!)
               ?.find((u) => u.userId === recipientId);
+
             if (recipient) {
               recipient.send({
                 type: parsedData.type,
                 payload: {
                   ...parsedData.payload,
-                  sender: this.userId!
+                  sender: this.userId!,
                 },
               });
             }
+
             break;
           }
         }
@@ -333,12 +401,27 @@ export class User {
         console.error("Error processing websocket message:", err);
       }
     });
+
+    // Handle WebSocket errors.
+    this.ws.on("error", (error) => {
+      console.error(
+        `WebSocket error for user ${this.userId ?? this.id}:`,
+        error,
+      );
+    });
+
+    // Handle disconnect.
+    this.ws.on("close", () => {
+      this.destroy();
+    });
   }
 
   public async kick() {
     this.send({
       type: "kicked",
-      payload: { reason: "Repeated inappropriate chat messages." },
+      payload: {
+        reason: "Repeated inappropriate chat messages.",
+      },
     });
 
     RoomManager.getInstance().broadcast(
@@ -350,49 +433,96 @@ export class User {
         },
       },
       this,
-      this.spaceId!
+      this.spaceId!,
     );
 
     await client.space.update({
       where: { id: this.spaceId! },
-      data: { bannedUsers: { push: this.userId! } },
+      data: {
+        bannedUsers: {
+          push: this.userId!,
+        },
+      },
     });
 
     RoomManager.getInstance().removeUser(this, this.spaceId!);
+
     this.ws.close();
   }
 
   destroy() {
-    const roomCalls = RoomManager.getInstance().ongoingCalls.get(this.spaceId!);
+    // Prevent cleanup from running multiple times.
+    if (!this.spaceId) {
+      return;
+    }
+
+    const roomCalls = RoomManager.getInstance().ongoingCalls.get(this.spaceId);
+
     if (roomCalls && roomCalls.has(this.userId!)) {
       const otherUserId = roomCalls.get(this.userId!)!;
+
       const otherUser = RoomManager.getInstance()
-        .rooms.get(this.spaceId!)
+        .rooms.get(this.spaceId)
         ?.find((u) => u.userId === otherUserId);
+
       if (otherUser) {
         otherUser.send({
           type: "call-end",
-          payload: { from: this.userId! },
+          payload: {
+            from: this.userId!,
+          },
         });
       }
+
       RoomManager.getInstance().endCall(
-        this.spaceId!,
+        this.spaceId,
         this.userId!,
-        otherUserId
+        otherUserId,
       );
     }
+
     RoomManager.getInstance().broadcast(
       {
         type: "user-left",
-        payload: { id: this.id, userId: this.userId },
+        payload: {
+          id: this.id,
+          userId: this.userId,
+        },
       },
       this,
-      this.spaceId!
+      this.spaceId,
     );
-    RoomManager.getInstance().removeUser(this, this.spaceId!);
+
+    RoomManager.getInstance().removeUser(this, this.spaceId);
+
+    // Prevent destroy() from executing its cleanup again.
+    this.spaceId = undefined;
   }
 
   send(payload: OutgoingMessage) {
-    this.ws.send(JSON.stringify(payload));
+    // IMPORTANT:
+    // Never call send() while the WebSocket is CONNECTING,
+    // CLOSING, or CLOSED.
+    if (this.ws.readyState !== WebSocket.OPEN) {
+      console.warn(
+        `Skipping WebSocket send for user ${
+          this.userId ?? this.id
+        }. ReadyState: ${this.ws.readyState}`,
+      );
+
+      return false;
+    }
+
+    try {
+      this.ws.send(JSON.stringify(payload));
+      return true;
+    } catch (error) {
+      console.error(
+        `Failed to send WebSocket message to user ${this.userId ?? this.id}:`,
+        error,
+      );
+
+      return false;
+    }
   }
 }

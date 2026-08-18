@@ -28,6 +28,10 @@ router.post("/signup", async (req: Request, res: Response) => {
     });
     res.json({
       userId: user.id,
+      token: jwt.sign(
+        { userId: user.id, role: user.role, username: user.username },
+        sanitizedConfig.JWT_SECRET,
+      ),
     });
   } catch (e: any) {
     console.log("SIGNUP ERROR:", e);

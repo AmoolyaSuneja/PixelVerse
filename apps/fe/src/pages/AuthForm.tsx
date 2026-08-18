@@ -8,18 +8,19 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isNewAccount, setIsNewAccount] = useState(false);
   const [error, setError] = useState("");
   const { user, login, signup } = useAuth();
   const navigate = useNavigate();
 
   // Redirect if already logged in
   useEffect(() => {
-    if (user) {
+    if (user && !isNewAccount) {
       navigate("/");
     }
-  }, [user, navigate]);
+  }, [user, isNewAccount, navigate]);
 
-  if (user) return null;
+  if (user && !isNewAccount) return null;
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +32,7 @@ export default function AuthPage() {
         await login(username, password);
         navigate("/");
       } else {
+        setIsNewAccount(true);
         await signup(username, password);
         navigate("/avatar-selection");
       }
@@ -117,7 +119,10 @@ export default function AuthPage() {
 
         <div className="text-center mt-6">
           <button
-            onClick={() => setIsLogin(!isLogin)}
+            onClick={() => {
+              setIsLogin(!isLogin);
+              setIsNewAccount(false);
+            }}
             className="text-xs font-black text-black hover:bg-black hover:text-white px-2 py-1 uppercase border-2 border-transparent hover:border-black transition-colors"
           >
             {isLogin

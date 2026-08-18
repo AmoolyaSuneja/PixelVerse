@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useCallback, useContext, useRef, useState, ReactNode } from "react";
 
 type AvatarContextType = {
   avatars: Map<string, string>;
@@ -11,12 +11,19 @@ const AvatarContext = createContext<AvatarContextType | undefined>(undefined);
 
 export const AvatarProvider = ({ children }: { children: ReactNode }) => {
   const [avatars, setAvatars] = useState<Map<string, string>>(new Map());
+  const avatarsRef = useRef(avatars);
+  const inFlight = useRef(new Set<string>());
 
-  const fetchAvatars = async (usernames: string[]) => {
-    if (usernames.length === 0) return;
+  const fetchAvatars = useCallback(async (usernames: string[]) => {
+    const missingUsernames = [...new Set(usernames)].filter(
+      (username) => username && !avatarsRef.current.has(username) && !inFlight.current.has(username),
+    );
+    if (missingUsernames.length === 0) return;
+
+    missingUsernames.forEach((username) => inFlight.current.add(username));
 
     try {
-      const usernamesString = usernames.join(",");
+      const usernamesString = encodeURIComponent(missingUsernames.join(","));
 
       const response = await fetch(
         `${BACKEND_URL}/api/v1/user/metadata/bulk?userIds=${usernamesString}`,
@@ -36,12 +43,22 @@ export const AvatarProvider = ({ children }: { children: ReactNode }) => {
             newAvatars.set(username, finalAvatarId);
           },
         );
+        // Cache a fallback too, so users with no saved avatar are not fetched
+        // on every movement update.
+        missingUsernames.forEach((username) => {
+          if (!newAvatars.has(username)) {
+            newAvatars.set(username, "procedural:cyan_vibrant_astro_0");
+          }
+        });
+        avatarsRef.current = newAvatars;
         return newAvatars;
       });
     } catch (error) {
       console.error("Error fetching avatars:", error);
+    } finally {
+      missingUsernames.forEach((username) => inFlight.current.delete(username));
     }
-  };
+  }, []);
 
   return (
     <AvatarContext.Provider value={{ avatars, fetchAvatars }}>

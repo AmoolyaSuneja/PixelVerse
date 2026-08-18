@@ -7,7 +7,9 @@ process.on("uncaughtException", (err) => {
 });
 
 const app = express();
-app.get("/", (req, res) => res.send("WebSocket Server is running (Health Check OK)"));
+app.get("/", (_req, res) => {
+  res.send("WebSocket Server is running (Health Check OK)");
+});
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 8081;
 const server = app.listen(PORT, () => {

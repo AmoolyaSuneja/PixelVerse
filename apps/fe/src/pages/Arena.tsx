@@ -1,5 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { drawProceduralCharacter, generateProceduralDataURL } from "../utils/SpriteGenerator";
+import {
+  drawProceduralCharacter,
+  generateProceduralDataURL,
+} from "../utils/SpriteGenerator";
 import { useAvatar } from "../contexts/AvatarsContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -13,12 +16,24 @@ const PARTICLE_COUNT = 100;
 const TRAIL_LENGTH = 20;
 
 // --- WebRTC Configuration ---
+const iceServers: RTCIceServer[] = [
+  {
+    urls: ["stun:stun1.l.google.com:19302", "stun:stun2.l.google.com:19302"],
+  },
+];
+
+// STUN works on many networks, but a TURN relay is needed when peers are
+// behind restrictive NATs. Relay values stay in deployment environment files.
+if (import.meta.env.VITE_TURN_URL) {
+  iceServers.push({
+    urls: import.meta.env.VITE_TURN_URL,
+    username: import.meta.env.VITE_TURN_USERNAME,
+    credential: import.meta.env.VITE_TURN_CREDENTIAL,
+  });
+}
+
 const servers = {
-  iceServers: [
-    {
-      urls: ["stun:stun1.l.google.com:19302", "stun:stun2.l.google.com:19302"],
-    },
-  ],
+  iceServers,
   iceCandidatePoolSize: 10,
 };
 
@@ -94,10 +109,12 @@ export const Arena = () => {
   const peerConnection = useRef<RTCPeerConnection | null>(null);
   const localStream = useRef<MediaStream | null>(null);
   const remoteStream = useRef<MediaStream | null>(null);
+  // ICE messages can arrive before an incoming call is accepted or before an
+  // answer is applied. Keep them until WebRTC is ready for them.
+  const pendingIceCandidates = useRef<RTCIceCandidateInit[]>([]);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
-  // Animation Refs
   const particles = useRef<Particle[]>([]);
   const movementTrails = useRef<Map<string, any[]>>(new Map());
   const currentUserAnimationRef = useRef<any>({
@@ -114,9 +131,14 @@ export const Arena = () => {
   const NETWORK_SYNC_INTERVAL = 50; // ms
   const lastSyncTimeRef = useRef(0);
   const keysPressed = useRef<Set<string>>(new Set());
-  
+
   // Animation state tracking for drawing limbs
-  const userAnimState = useRef(new Map<string, { moving: boolean; walkCycle: number; direction: string }>());
+  const userAnimState = useRef(
+    new Map<
+      string,
+      { moving: boolean; walkCycle: number; direction: string }
+    >(),
+  );
 
   // --- Cleanup ---
   useEffect(() => {
@@ -145,12 +167,25 @@ export const Arena = () => {
 
       if (mainVideoRef.current && mainStream) {
         mainVideoRef.current.srcObject = mainStream;
+        void mainVideoRef.current.play().catch(() => undefined);
       }
       if (pipVideoRef.current && pipStream) {
         pipVideoRef.current.srcObject = pipStream;
+        void pipVideoRef.current.play().catch(() => undefined);
       }
     }
-  }, [callStatus, isVideoSwapped, localStream.current, remoteStream.current]);
+  }, [callStatus, isVideoSwapped]);
+
+  const addPendingIceCandidates = async (pc: RTCPeerConnection) => {
+    const candidates = pendingIceCandidates.current.splice(0);
+    await Promise.all(
+      candidates.map((candidate) =>
+        pc.addIceCandidate(new RTCIceCandidate(candidate)).catch((error) =>
+          console.error("Unable to add queued ICE candidate", error),
+        ),
+      ),
+    );
+  };
 
   // --- Helper: Start Media ---
   const startWebcam = async () => {
@@ -176,11 +211,15 @@ export const Arena = () => {
     stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
     pc.ontrack = (event) => {
-      remoteStream.current = event.streams[0];
+      const stream = event.streams[0] || remoteStream.current || new MediaStream();
+      if (!event.streams[0]) stream.addTrack(event.track);
+      remoteStream.current = stream;
       if (mainVideoRef.current && !isVideoSwapped) {
-        mainVideoRef.current.srcObject = remoteStream.current;
+        mainVideoRef.current.srcObject = stream;
+        void mainVideoRef.current.play().catch(() => undefined);
       } else if (pipVideoRef.current && isVideoSwapped) {
-        pipVideoRef.current.srcObject = remoteStream.current;
+        pipVideoRef.current.srcObject = stream;
+        void pipVideoRef.current.play().catch(() => undefined);
       }
     };
     return pc;
@@ -199,13 +238,17 @@ export const Arena = () => {
 
       const pc = setupPeerConnection(stream);
       peerConnection.current = pc;
+      pendingIceCandidates.current = [];
 
       pc.onicecandidate = (event) => {
         if (event.candidate) {
           wsRef.current?.send(
             JSON.stringify({
               type: "webrtc-ice-candidate",
-              payload: { candidate: event.candidate.toJSON(), recipient: targetUserId },
+              payload: {
+                candidate: event.candidate.toJSON(),
+                recipient: targetUserId,
+              },
             }),
           );
         }
@@ -213,11 +256,14 @@ export const Arena = () => {
 
       const offerDescription = await pc.createOffer();
       await pc.setLocalDescription(offerDescription);
-      
+
       wsRef.current?.send(
         JSON.stringify({
           type: "webrtc-offer",
-          payload: { offer: { sdp: offerDescription.sdp, type: offerDescription.type }, recipient: targetUserId },
+          payload: {
+            offer: { sdp: offerDescription.sdp, type: offerDescription.type },
+            recipient: targetUserId,
+          },
         }),
       );
     },
@@ -240,20 +286,27 @@ export const Arena = () => {
         wsRef.current?.send(
           JSON.stringify({
             type: "webrtc-ice-candidate",
-            payload: { candidate: event.candidate.toJSON(), recipient: remoteUserId },
+            payload: {
+              candidate: event.candidate.toJSON(),
+              recipient: remoteUserId,
+            },
           }),
         );
       }
     };
 
     await pc.setRemoteDescription(new RTCSessionDescription(incomingOffer));
+    await addPendingIceCandidates(pc);
     const answerDescription = await pc.createAnswer();
     await pc.setLocalDescription(answerDescription);
 
     wsRef.current?.send(
       JSON.stringify({
         type: "webrtc-answer",
-        payload: { answer: { type: answerDescription.type, sdp: answerDescription.sdp }, recipient: remoteUserId },
+        payload: {
+          answer: { type: answerDescription.type, sdp: answerDescription.sdp },
+          recipient: remoteUserId,
+        },
       }),
     );
 
@@ -280,31 +333,36 @@ export const Arena = () => {
   }, [remoteUserId]);
 
   // --- Action: End Call ---
-  const handleEndCall = useCallback(async (skipNotify?: any) => {
-    const shouldSkipNotify = skipNotify === true;
-    if (localStream.current) {
-      localStream.current.getTracks().forEach((t) => t.stop());
-      localStream.current = null;
-    }
-    if (peerConnection.current) {
-      peerConnection.current.close();
-      peerConnection.current = null;
-    }
-    if (remoteUserId && !shouldSkipNotify) {
-      wsRef.current?.send(
-        JSON.stringify({
-          type: "call-ended",
-          payload: { user1: currentUser.userId, user2: remoteUserId },
-        }),
-      );
-    }
-    setCallStatus("idle");
-    setRemoteUserId(null);
-    setIncomingOffer(null);
-    setScreenShareActive(false);
-    setDownloadLink(null);
-    setIsVideoSwapped(false);
-  }, [remoteUserId, currentUser]);
+  const handleEndCall = useCallback(
+    async (skipNotify?: any) => {
+      const shouldSkipNotify = skipNotify === true;
+      if (localStream.current) {
+        localStream.current.getTracks().forEach((t) => t.stop());
+        localStream.current = null;
+      }
+      if (peerConnection.current) {
+        peerConnection.current.close();
+        peerConnection.current = null;
+      }
+      remoteStream.current = null;
+      pendingIceCandidates.current = [];
+      if (remoteUserId && !shouldSkipNotify) {
+        wsRef.current?.send(
+          JSON.stringify({
+            type: "call-ended",
+            payload: { user1: currentUser.userId, user2: remoteUserId },
+          }),
+        );
+      }
+      setCallStatus("idle");
+      setRemoteUserId(null);
+      setIncomingOffer(null);
+      setScreenShareActive(false);
+      setDownloadLink(null);
+      setIsVideoSwapped(false);
+    },
+    [remoteUserId, currentUser],
+  );
 
   // --- Features ---
   const toggleScreenShare = async () => {
@@ -392,7 +450,6 @@ export const Arena = () => {
     }
   };
 
-
   // --- Game Loop & Effects ---
   useEffect(() => {
     for (let i = 0; i < PARTICLE_COUNT; i++) {
@@ -431,7 +488,7 @@ export const Arena = () => {
   }, []);
 
   useEffect(() => {
-    const userIds = Array.from(users.values()).map(u => u.userId);
+    const userIds = Array.from(users.values()).map((u) => u.userId);
     if (currentUser?.userId) userIds.push(currentUser.userId);
     fetchAvatars(userIds);
   }, [users, currentUser]);
@@ -443,7 +500,9 @@ export const Arena = () => {
       Array.from(avatars.entries()).forEach(([_userId, url]) => {
         if (!loadedImages.has(url)) {
           const img = new Image();
-          img.src = url.startsWith("procedural:") ? generateProceduralDataURL(url) : url;
+          img.src = url.startsWith("procedural:")
+            ? generateProceduralDataURL(url)
+            : url;
           loadPromises.push(
             new Promise((resolve) => {
               img.onload = () => resolve();
@@ -495,16 +554,18 @@ export const Arena = () => {
     setSpaceId(spaceIdFromUrl);
   }, []);
 
-
-
   useEffect(() => {
     if (!token || !spaceId) return;
     const fetchSpaceDetails = async () => {
       try {
-        const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8080";
-        const response = await axios.get(`${BACKEND_URL}/api/v1/space/${spaceId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const BACKEND_URL =
+          import.meta.env.VITE_BACKEND_URL || "http://localhost:8080";
+        const response = await axios.get(
+          `${BACKEND_URL}/api/v1/space/${spaceId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
         if (response.data.thumbnail) {
           spaceVibeRef.current = response.data.thumbnail;
         }
@@ -549,7 +610,11 @@ export const Arena = () => {
             visualX: initialGridX * 50,
             visualY: initialGridY * 50,
           };
-          userAnimState.current.set(message.payload.id, { moving: false, walkCycle: 0, direction: 'down' });
+          userAnimState.current.set(message.payload.id, {
+            moving: false,
+            walkCycle: 0,
+            direction: "down",
+          });
           const userMap = new Map();
           message.payload.users.forEach((user: any) => {
             userMap.set(user.id, {
@@ -563,7 +628,11 @@ export const Arena = () => {
               visualX: user.x * 50,
               visualY: user.y * 50,
             });
-            userAnimState.current.set(user.id, { moving: false, walkCycle: 0, direction: 'down' });
+            userAnimState.current.set(user.id, {
+              moving: false,
+              walkCycle: 0,
+              direction: "down",
+            });
           });
           setUsers(userMap);
           const ongoingCalls = message.payload.ongoingCalls || [];
@@ -574,7 +643,11 @@ export const Arena = () => {
           });
           break;
         case "user-joined":
-          userAnimState.current.set(message.payload.id, { moving: false, walkCycle: 0, direction: 'down' });
+          userAnimState.current.set(message.payload.id, {
+            moving: false,
+            walkCycle: 0,
+            direction: "down",
+          });
           usersAnimationRef.current.set(message.payload.id, {
             isMoving: false,
             visualX: message.payload.x * 50,
@@ -684,8 +757,8 @@ export const Arena = () => {
           });
           if (
             (message.payload.user1 === currentUser?.userId ||
-             message.payload.user2 === currentUser?.userId) &&
-             remoteUserId !== null
+              message.payload.user2 === currentUser?.userId) &&
+            remoteUserId !== null
           ) {
             handleEndCall(true);
           }
@@ -706,8 +779,14 @@ export const Arena = () => {
           }
           break;
         case "webrtc-answer":
-          if (peerConnection.current && !peerConnection.current.currentRemoteDescription) {
-            peerConnection.current.setRemoteDescription(new RTCSessionDescription(message.payload.answer));
+          if (
+            peerConnection.current &&
+            !peerConnection.current.currentRemoteDescription
+          ) {
+            await peerConnection.current.setRemoteDescription(
+              new RTCSessionDescription(message.payload.answer),
+            );
+            await addPendingIceCandidates(peerConnection.current);
             wsRef.current?.send(
               JSON.stringify({
                 type: "call-started",
@@ -717,8 +796,15 @@ export const Arena = () => {
           }
           break;
         case "webrtc-ice-candidate":
-          if (peerConnection.current) {
-            peerConnection.current.addIceCandidate(new RTCIceCandidate(message.payload.candidate)).catch(e => console.error("Error adding ice candidate", e));
+          if (
+            peerConnection.current &&
+            peerConnection.current.remoteDescription
+          ) {
+            peerConnection.current
+              .addIceCandidate(new RTCIceCandidate(message.payload.candidate))
+              .catch((e) => console.error("Error adding ice candidate", e));
+          } else {
+            pendingIceCandidates.current.push(message.payload.candidate);
           }
           break;
         case "webrtc-decline":
@@ -753,9 +839,6 @@ export const Arena = () => {
   useEffect(() => {
     handleWebSocketMessageRef.current = handleWebSocketMessage;
   }, [handleWebSocketMessage]);
-
-
-
 
   const sendPrivateMessage = (recipient: string, message: string) => {
     if (!message.trim() || !wsRef.current) return;
@@ -825,18 +908,23 @@ export const Arena = () => {
     if (!ctx) return;
     let animationFrameId: number;
 
-      const render = () => {
+    const render = () => {
       const currentTime = Date.now();
 
       // Update Current User Position locally via keys
-      let { visualX: currentVisualX = 0, visualY: currentVisualY = 0 } = currentUserAnimationRef.current || {};
-      
+      let { visualX: currentVisualX = 0, visualY: currentVisualY = 0 } =
+        currentUserAnimationRef.current || {};
+
       let dx = 0;
       let dy = 0;
-      if (keysPressed.current.has("arrowup") || keysPressed.current.has("w")) dy -= MOVE_SPEED;
-      if (keysPressed.current.has("arrowdown") || keysPressed.current.has("s")) dy += MOVE_SPEED;
-      if (keysPressed.current.has("arrowleft") || keysPressed.current.has("a")) dx -= MOVE_SPEED;
-      if (keysPressed.current.has("arrowright") || keysPressed.current.has("d")) dx += MOVE_SPEED;
+      if (keysPressed.current.has("arrowup") || keysPressed.current.has("w"))
+        dy -= MOVE_SPEED;
+      if (keysPressed.current.has("arrowdown") || keysPressed.current.has("s"))
+        dy += MOVE_SPEED;
+      if (keysPressed.current.has("arrowleft") || keysPressed.current.has("a"))
+        dx -= MOVE_SPEED;
+      if (keysPressed.current.has("arrowright") || keysPressed.current.has("d"))
+        dx += MOVE_SPEED;
 
       // Normalize diagonal speed
       if (dx !== 0 && dy !== 0) {
@@ -846,33 +934,49 @@ export const Arena = () => {
       }
 
       const isLocalMoving = dx !== 0 || dy !== 0;
-      let animState = userAnimState.current.get(currentUser.id) || { moving: false, walkCycle: 0, direction: 'down' };
-      
+      let animState = userAnimState.current.get(currentUser.id) || {
+        moving: false,
+        walkCycle: 0,
+        direction: "down",
+      };
+
       if (isLocalMoving) {
         currentVisualX += dx;
         currentVisualY += dy;
         // Restrict to canvas bounds
-        currentVisualX = Math.max(AVATAR_SIZE/2, Math.min(canvas.width - AVATAR_SIZE/2, currentVisualX));
-        currentVisualY = Math.max(AVATAR_SIZE/2, Math.min(canvas.height - AVATAR_SIZE/2, currentVisualY));
-        
+        currentVisualX = Math.max(
+          AVATAR_SIZE / 2,
+          Math.min(canvas.width - AVATAR_SIZE / 2, currentVisualX),
+        );
+        currentVisualY = Math.max(
+          AVATAR_SIZE / 2,
+          Math.min(canvas.height - AVATAR_SIZE / 2, currentVisualY),
+        );
+
         currentUserAnimationRef.current.visualX = currentVisualX;
         currentUserAnimationRef.current.visualY = currentVisualY;
-        
+
         animState.moving = true;
         animState.walkCycle += 0.15; // Speed of walking animation
         if (Math.abs(dx) > Math.abs(dy)) {
-           animState.direction = dx > 0 ? 'right' : 'left';
+          animState.direction = dx > 0 ? "right" : "left";
         } else {
-           animState.direction = dy > 0 ? 'down' : 'up';
+          animState.direction = dy > 0 ? "down" : "up";
         }
 
         // Sync with network periodically
         if (currentTime - lastSyncTimeRef.current > NETWORK_SYNC_INTERVAL) {
-           wsRef.current?.send(JSON.stringify({
+          wsRef.current?.send(
+            JSON.stringify({
               type: "move",
-              payload: { x: currentVisualX / 50, y: currentVisualY / 50, userId: currentUser.userId }
-           }));
-           lastSyncTimeRef.current = currentTime;
+              payload: {
+                x: currentVisualX / 50,
+                y: currentVisualY / 50,
+                userId: currentUser.userId,
+              },
+            }),
+          );
+          lastSyncTimeRef.current = currentTime;
         }
       } else {
         animState.moving = false;
@@ -881,26 +985,39 @@ export const Arena = () => {
       userAnimState.current.set(currentUser.id, animState);
 
       // Interpolate Other Users
-      const usersVisual = new Map<string, { visualX: number; visualY: number }>();
+      const usersVisual = new Map<
+        string,
+        { visualX: number; visualY: number }
+      >();
       users.forEach((user, userId) => {
-        const animation = usersAnimationRef.current.get(userId) || { visualX: user.gridX * 50, visualY: user.gridY * 50 };
+        const animation = usersAnimationRef.current.get(userId) || {
+          visualX: user.gridX * 50,
+          visualY: user.gridY * 50,
+        };
         let { visualX, visualY } = animation;
-        let otherAnimState = userAnimState.current.get(userId) || { moving: false, walkCycle: 0, direction: 'down' };
+        let otherAnimState = userAnimState.current.get(userId) || {
+          moving: false,
+          walkCycle: 0,
+          direction: "down",
+        };
 
-        if (animation.targetX !== undefined && animation.targetY !== undefined) {
+        if (
+          animation.targetX !== undefined &&
+          animation.targetY !== undefined
+        ) {
           const tdx = animation.targetX - visualX;
           const tdy = animation.targetY - visualY;
           const dist = Math.sqrt(tdx * tdx + tdy * tdy);
-          
+
           if (dist > 1) {
             visualX += tdx * 0.2; // Interpolation factor
             visualY += tdy * 0.2;
             otherAnimState.moving = true;
             otherAnimState.walkCycle += 0.15;
             if (Math.abs(tdx) > Math.abs(tdy)) {
-               otherAnimState.direction = tdx > 0 ? 'right' : 'left';
+              otherAnimState.direction = tdx > 0 ? "right" : "left";
             } else {
-               otherAnimState.direction = tdy > 0 ? 'down' : 'up';
+              otherAnimState.direction = tdy > 0 ? "down" : "up";
             }
           } else {
             visualX = animation.targetX;
@@ -909,7 +1026,7 @@ export const Arena = () => {
             otherAnimState.walkCycle = 0;
           }
         }
-        
+
         animation.visualX = visualX;
         animation.visualY = visualY;
         usersAnimationRef.current.set(userId, animation);
@@ -918,15 +1035,36 @@ export const Arena = () => {
       });
 
       // Draw Background
-      drawBackground(ctx, canvas.width, canvas.height, spaceVibeRef.current, currentTime);
+      drawBackground(
+        ctx,
+        canvas.width,
+        canvas.height,
+        spaceVibeRef.current,
+        currentTime,
+      );
 
       // Draw Main User
       if (currentUser.gridX !== undefined) {
         const rawAvatar = avatars.get(currentUser.userId);
-        const avatarStr = (rawAvatar && rawAvatar.startsWith("procedural:")) ? rawAvatar : "procedural:cyan_vibrant_astro_0";
-        const myState = userAnimState.current.get(currentUser.id) || { moving: false, walkCycle: 0, direction: 'down' };
+        const avatarStr =
+          rawAvatar && rawAvatar.startsWith("procedural:")
+            ? rawAvatar
+            : "procedural:cyan_vibrant_astro_0";
+        const myState = userAnimState.current.get(currentUser.id) || {
+          moving: false,
+          walkCycle: 0,
+          direction: "down",
+        };
 
-        drawProceduralCharacter(ctx, currentVisualX, currentVisualY, avatarStr, AVATAR_SIZE, myState.walkCycle, myState.direction);
+        drawProceduralCharacter(
+          ctx,
+          currentVisualX,
+          currentVisualY,
+          avatarStr,
+          AVATAR_SIZE,
+          myState.walkCycle,
+          myState.direction,
+        );
 
         ctx.fillStyle = "#fff";
         ctx.font = "14px Arial";
@@ -940,8 +1078,11 @@ export const Arena = () => {
         if (!user) return;
         const username = user.userId;
         const rawAvatar = avatars.get(username);
-        const avatarStr = (rawAvatar && rawAvatar.startsWith("procedural:")) ? rawAvatar : "procedural:cyan_vibrant_astro_0";
-        
+        const avatarStr =
+          rawAvatar && rawAvatar.startsWith("procedural:")
+            ? rawAvatar
+            : "procedural:cyan_vibrant_astro_0";
+
         if (usersAnimationRef.current.get(id)?.isMoving) {
           const trail = movementTrails.current.get(id) || [];
           trail.push({ x: visual.visualX, y: visual.visualY, opacity: 1 });
@@ -958,9 +1099,21 @@ export const Arena = () => {
           ctx.globalCompositeOperation = "source-over";
         }
 
-        const otherState = userAnimState.current.get(id) || { moving: false, walkCycle: 0, direction: 'down' };
+        const otherState = userAnimState.current.get(id) || {
+          moving: false,
+          walkCycle: 0,
+          direction: "down",
+        };
 
-        drawProceduralCharacter(ctx, visual.visualX, visual.visualY, avatarStr, AVATAR_SIZE, otherState.walkCycle, otherState.direction);
+        drawProceduralCharacter(
+          ctx,
+          visual.visualX,
+          visual.visualY,
+          avatarStr,
+          AVATAR_SIZE,
+          otherState.walkCycle,
+          otherState.direction,
+        );
 
         if (hoveredUser === id) {
           ctx.strokeStyle = "#00ffd5";
@@ -1055,340 +1208,372 @@ export const Arena = () => {
       </div>
 
       <div className="flex-1 flex gap-4 overflow-hidden min-h-0 relative z-10">
-          {/* LEFT PANEL: Chat */}
-          <div className="w-64 flex flex-col gap-4 z-10">
-            <div className="bg-[#1E90FF] border-[6px] border-black rounded-none p-4 flex-1 flex flex-col shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-              <h3 className="font-black text-white mb-4 text-xl tracking-tighter uppercase border-b-[4px] border-black pb-2">Global Chat</h3>
-              <div
-                ref={globalMessagesContainerRef}
-                className="flex-1 overflow-y-auto mb-4 space-y-2 pr-2"
-              >
-                {globalMessages
-                  .filter((m) => !blockedUsers.has(m.userId))
-                  .map((msg, i) => (
-                    <div key={i} className="text-sm bg-white p-3 border-[4px] border-black break-words rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                      <span className="font-black text-black uppercase">
-                        {msg.userId}:
-                      </span>{" "}
-                      <span className="text-black font-medium">{msg.message}</span>
-                    </div>
-                  ))}
-              </div>
-              <input
-                value={globalMessageInput}
-                onChange={(e) => setGlobalMessageInput(e.target.value)}
-                onKeyPress={(e) =>
-                  e.key === "Enter" &&
-                  (sendGlobalMessage(globalMessageInput),
-                  setGlobalMessageInput(""))
-                }
-                className="w-full bg-[#FDFBF7] border-[4px] border-black p-4 text-xl font-black text-black focus:outline-none placeholder-gray-500 rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
-                placeholder="TYPE A MESSAGE..."
-                disabled={isKicked}
-              />
+        {/* LEFT PANEL: Chat */}
+        <div className="w-64 flex flex-col gap-4 z-10">
+          <div className="bg-[#1E90FF] border-[6px] border-black rounded-none p-4 flex-1 flex flex-col shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+            <h3 className="font-black text-white mb-4 text-xl tracking-tighter uppercase border-b-[4px] border-black pb-2">
+              Global Chat
+            </h3>
+            <div
+              ref={globalMessagesContainerRef}
+              className="flex-1 overflow-y-auto mb-4 space-y-2 pr-2"
+            >
+              {globalMessages
+                .filter((m) => !blockedUsers.has(m.userId))
+                .map((msg, i) => (
+                  <div
+                    key={i}
+                    className="text-sm bg-white p-3 border-[4px] border-black break-words rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                  >
+                    <span className="font-black text-black uppercase">
+                      {msg.userId}:
+                    </span>{" "}
+                    <span className="text-black font-medium">
+                      {msg.message}
+                    </span>
+                  </div>
+                ))}
             </div>
+            <input
+              value={globalMessageInput}
+              onChange={(e) => setGlobalMessageInput(e.target.value)}
+              onKeyPress={(e) =>
+                e.key === "Enter" &&
+                (sendGlobalMessage(globalMessageInput),
+                setGlobalMessageInput(""))
+              }
+              className="w-full bg-[#FDFBF7] border-[4px] border-black p-4 text-xl font-black text-black focus:outline-none placeholder-gray-500 rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+              placeholder="TYPE A MESSAGE..."
+              disabled={isKicked}
+            />
+          </div>
 
-            {activeChatUser && (
-              <div className="bg-[#FF00FF] border-[6px] border-black rounded-none p-4 h-64 flex flex-col shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-                <div className="flex justify-between mb-2 border-b-[4px] border-black pb-2">
-                  <h3 className="font-black text-white text-xl tracking-tighter uppercase">
-                    DM: {activeChatUser}
-                  </h3>
-                  <button onClick={() => setActiveChatUser(null)} className="font-black text-white text-2xl hover:text-black">✕</button>
-                </div>
-                <div
-                  ref={privateMessagesContainerRef}
-                  className="flex-1 overflow-y-auto mb-2 space-y-2 pr-2"
+          {activeChatUser && (
+            <div className="bg-[#FF00FF] border-[6px] border-black rounded-none p-4 h-64 flex flex-col shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+              <div className="flex justify-between mb-2 border-b-[4px] border-black pb-2">
+                <h3 className="font-black text-white text-xl tracking-tighter uppercase">
+                  DM: {activeChatUser}
+                </h3>
+                <button
+                  onClick={() => setActiveChatUser(null)}
+                  className="font-black text-white text-2xl hover:text-black"
                 >
-                  {privateMessages
-                    .filter((msg) => msg.userId === activeChatUser || msg.recipient === activeChatUser)
-                    .map((msg, i) => (
+                  ✕
+                </button>
+              </div>
+              <div
+                ref={privateMessagesContainerRef}
+                className="flex-1 overflow-y-auto mb-2 space-y-2 pr-2"
+              >
+                {privateMessages
+                  .filter(
+                    (msg) =>
+                      msg.userId === activeChatUser ||
+                      msg.recipient === activeChatUser,
+                  )
+                  .map((msg, i) => (
                     <div
                       key={i}
                       className={`text-sm p-3 border-[4px] border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${msg.userId === currentUser.userId ? "bg-[#FFD700] text-black text-right" : "bg-white text-black"}`}
                     >
                       <span className="font-black uppercase text-xs block mb-1">
-                        {msg.userId === currentUser.userId ? "You" : msg.userId}:
+                        {msg.userId === currentUser.userId ? "You" : msg.userId}
+                        :
                       </span>
                       <span className="font-bold">{msg.message}</span>
                     </div>
                   ))}
-                </div>
-                <input
-                  value={privateMessageInput}
-                  onChange={(e) => setPrivateMessageInput(e.target.value)}
-                  onKeyPress={(e) =>
-                    e.key === "Enter" &&
-                    (sendPrivateMessage(activeChatUser, privateMessageInput),
-                    setPrivateMessageInput(""))
-                  }
-                  className="w-full bg-[#FDFBF7] border-[4px] border-black p-3 text-lg font-black text-black focus:outline-none placeholder-gray-500 rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
-                  placeholder="MESSAGE..."
-                />
               </div>
-            )}
+              <input
+                value={privateMessageInput}
+                onChange={(e) => setPrivateMessageInput(e.target.value)}
+                onKeyPress={(e) =>
+                  e.key === "Enter" &&
+                  (sendPrivateMessage(activeChatUser, privateMessageInput),
+                  setPrivateMessageInput(""))
+                }
+                className="w-full bg-[#FDFBF7] border-[4px] border-black p-3 text-lg font-black text-black focus:outline-none placeholder-gray-500 rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                placeholder="MESSAGE..."
+              />
+            </div>
+          )}
+        </div>
+
+        {/* MIDDLE: Canvas Game */}
+        <div className="flex-1 relative border-[6px] border-black bg-white rounded-none overflow-hidden shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] z-0">
+          <div
+            ref={scrollContainerRef}
+            className="w-full h-full overflow-auto cursor-crosshair bg-[#f0f0f0]"
+            onMouseMove={handleCanvasHover}
+          >
+            <canvas
+              ref={canvasRef}
+              width={2000}
+              height={2000}
+              className="bg-transparent"
+            />
           </div>
 
-          {/* MIDDLE: Canvas Game */}
-          <div className="flex-1 relative border-[6px] border-black bg-white rounded-none overflow-hidden shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] z-0">
+          {/* In-Call Overlay */}
+          {callStatus === "in-call" && (
             <div
-              ref={scrollContainerRef}
-              className="w-full h-full overflow-auto cursor-crosshair bg-[#f0f0f0]"
-              onMouseMove={handleCanvasHover}
-            >
-              <canvas ref={canvasRef} width={2000} height={2000} className="bg-transparent" />
-            </div>
-
-            {/* In-Call Overlay */}
-            {callStatus === "in-call" && (
-              <div
-                className={`absolute z-50 flex flex-col gap-3 bg-white border-4 border-black rounded-none p-4
+              className={`absolute z-50 flex flex-col gap-3 bg-white border-4 border-black rounded-none p-4
                   ${
                     isExpanded
-                      ? "top-0 left-0 w-full h-full" 
+                      ? "top-0 left-0 w-full h-full"
                       : "bottom-6 right-6 w-[480px]"
                   }
                 `}
+            >
+              {/* Main Video Area */}
+              <div
+                className={`relative overflow-hidden group bg-gray-200 border-2 border-black rounded-none ${
+                  isExpanded ? "flex-1 w-full" : "aspect-video"
+                }`}
               >
-                {/* Main Video Area */}
+                <video
+                  ref={mainVideoRef}
+                  autoPlay
+                  playsInline
+                  muted={isVideoSwapped}
+                  className={`w-full h-full ${
+                    isExpanded ? "object-contain" : "object-cover"
+                  } ${isVideoSwapped ? "scale-x-[-1]" : ""}`}
+                />
+
+                {/* Label */}
+                <div className="absolute top-2 left-2 bg-white border-2 border-black px-2 py-1 text-sm font-black uppercase text-black rounded-none">
+                  {isVideoSwapped ? "YOU" : remoteUserId}
+                </div>
+
+                {/* PIP Video Area */}
                 <div
-                  className={`relative overflow-hidden group bg-gray-200 border-2 border-black rounded-none ${
-                    isExpanded ? "flex-1 w-full" : "aspect-video"
-                  }`}
-                >
-                  <video
-                    ref={mainVideoRef}
-                    autoPlay
-                    playsInline
-                    muted={isVideoSwapped}
-                    className={`w-full h-full ${
-                      isExpanded ? "object-contain" : "object-cover"
-                    } ${isVideoSwapped ? "scale-x-[-1]" : ""}`}
-                  />
-
-                  {/* Label */}
-                  <div className="absolute top-2 left-2 bg-white border-2 border-black px-2 py-1 text-sm font-black uppercase text-black rounded-none">
-                    {isVideoSwapped ? "YOU" : remoteUserId}
-                  </div>
-
-                  {/* PIP Video Area */}
-                  <div
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsVideoSwapped(!isVideoSwapped);
-                    }}
-                    className={`absolute cursor-pointer bg-white border-2 border-black rounded-none overflow-hidden z-10
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsVideoSwapped(!isVideoSwapped);
+                  }}
+                  className={`absolute cursor-pointer bg-white border-2 border-black rounded-none overflow-hidden z-10
                       ${
                         isExpanded
                           ? "bottom-4 right-4 w-64 aspect-video"
                           : "top-4 right-4 w-32 aspect-video"
                       }
                     `}
-                  >
-                    <video
-                      ref={pipVideoRef}
-                      autoPlay
-                      playsInline
-                      muted={!isVideoSwapped}
-                      className={`w-full h-full object-cover ${
-                        !isVideoSwapped && !screenShareActive
-                          ? "scale-x-[-1]"
-                          : ""
-                      }`}
-                    />
-                  </div>
-                </div>
-
-                {/* Controls Bar */}
-                <div
-                  className={`flex flex-wrap justify-center gap-2 ${isExpanded ? "py-2" : ""}`}
                 >
-                  <button
-                    onClick={toggleMic}
-                    className={`px-3 py-2 font-black uppercase border-2 border-black rounded-none text-xs ${
-                      micActive
-                        ? "bg-white text-black hover:bg-gray-200"
-                        : "bg-red-600 text-white"
+                  <video
+                    ref={pipVideoRef}
+                    autoPlay
+                    playsInline
+                    muted={!isVideoSwapped}
+                    className={`w-full h-full object-cover ${
+                      !isVideoSwapped && !screenShareActive
+                        ? "scale-x-[-1]"
+                        : ""
                     }`}
-                  >
-                    {micActive ? "[MIC ON]" : "[MIC OFF]"}
-                  </button>
-                  <button
-                    onClick={toggleVideo}
-                    className={`px-3 py-2 font-black uppercase border-2 border-black rounded-none text-xs ${
-                      videoActive
-                        ? "bg-white text-black hover:bg-gray-200"
-                        : "bg-red-600 text-white"
-                    }`}
-                  >
-                    {videoActive ? "[CAM ON]" : "[CAM OFF]"}
-                  </button>
-                  <button
-                    onClick={toggleScreenShare}
-                    className={`px-3 py-2 font-black uppercase border-2 border-black rounded-none text-xs ${
-                      screenShareActive
-                        ? "bg-green-500 text-black"
-                        : "bg-white text-black hover:bg-gray-200"
-                    }`}
-                  >
-                    {screenShareActive ? "[STOP SHARE]" : "[SHARE SCR]"}
-                  </button>
-
-                  <button
-                    onClick={() => setIsVideoSwapped(!isVideoSwapped)}
-                    className="px-3 py-2 font-black uppercase border-2 border-black rounded-none text-xs bg-white text-black hover:bg-gray-200"
-                  >
-                    [SWAP]
-                  </button>
-
-                  <button
-                    onClick={isRecording ? stopRecording : startRecording}
-                    className={`px-3 py-2 font-black uppercase border-2 border-black rounded-none text-xs ${
-                      isRecording
-                        ? "bg-red-600 text-white"
-                        : "bg-white text-black hover:bg-gray-200"
-                    }`}
-                  >
-                    {isRecording ? "[STOP REC]" : "[RECORD]"}
-                  </button>
-
-                  <button
-                    onClick={() => setIsExpanded(!isExpanded)}
-                    className="px-3 py-2 font-black uppercase border-2 border-black rounded-none text-xs bg-white text-black hover:bg-gray-200"
-                  >
-                    {isExpanded ? "[MIN]" : "[MAX]"}
-                  </button>
-
-                  <button
-                    onClick={handleEndCall}
-                    className="px-3 py-2 font-black uppercase border-2 border-black rounded-none text-xs bg-red-600 text-white hover:bg-red-700"
-                  >
-                    [END CALL]
-                  </button>
+                  />
                 </div>
               </div>
-            )}
 
-            {/* Recording Download Popup */}
-            {downloadLink && (
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white border-4 border-black p-4 rounded-none flex items-center gap-4 z-50">
-                <div className="bg-green-200 border-2 border-black font-black p-2 rounded-none text-xs">
-                  [SAVED]
-                </div>
-                <div>
-                  <p className="text-sm font-black uppercase">Recording Saved</p>
-                  <a
-                    href={downloadLink}
-                    download="recording.webm"
-                    className="text-xs text-blue-700 font-bold hover:underline uppercase"
-                  >
-                    Download File
-                  </a>
-                </div>
+              {/* Controls Bar */}
+              <div
+                className={`flex flex-wrap justify-center gap-2 ${isExpanded ? "py-2" : ""}`}
+              >
                 <button
-                  onClick={() => setDownloadLink(null)}
-                  className="font-black text-black ml-4 hover:bg-gray-200 p-1 border-2 border-transparent hover:border-black rounded-none"
+                  onClick={toggleMic}
+                  className={`px-3 py-2 font-black uppercase border-2 border-black rounded-none text-xs ${
+                    micActive
+                      ? "bg-white text-black hover:bg-gray-200"
+                      : "bg-red-600 text-white"
+                  }`}
                 >
-                  ✕
+                  {micActive ? "[MIC ON]" : "[MIC OFF]"}
+                </button>
+                <button
+                  onClick={toggleVideo}
+                  className={`px-3 py-2 font-black uppercase border-2 border-black rounded-none text-xs ${
+                    videoActive
+                      ? "bg-white text-black hover:bg-gray-200"
+                      : "bg-red-600 text-white"
+                  }`}
+                >
+                  {videoActive ? "[CAM ON]" : "[CAM OFF]"}
+                </button>
+                <button
+                  onClick={toggleScreenShare}
+                  className={`px-3 py-2 font-black uppercase border-2 border-black rounded-none text-xs ${
+                    screenShareActive
+                      ? "bg-green-500 text-black"
+                      : "bg-white text-black hover:bg-gray-200"
+                  }`}
+                >
+                  {screenShareActive ? "[STOP SHARE]" : "[SHARE SCR]"}
+                </button>
+
+                <button
+                  onClick={() => setIsVideoSwapped(!isVideoSwapped)}
+                  className="px-3 py-2 font-black uppercase border-2 border-black rounded-none text-xs bg-white text-black hover:bg-gray-200"
+                >
+                  [SWAP]
+                </button>
+
+                <button
+                  onClick={isRecording ? stopRecording : startRecording}
+                  className={`px-3 py-2 font-black uppercase border-2 border-black rounded-none text-xs ${
+                    isRecording
+                      ? "bg-red-600 text-white"
+                      : "bg-white text-black hover:bg-gray-200"
+                  }`}
+                >
+                  {isRecording ? "[STOP REC]" : "[RECORD]"}
+                </button>
+
+                <button
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="px-3 py-2 font-black uppercase border-2 border-black rounded-none text-xs bg-white text-black hover:bg-gray-200"
+                >
+                  {isExpanded ? "[MIN]" : "[MAX]"}
+                </button>
+
+                <button
+                  onClick={handleEndCall}
+                  className="px-3 py-2 font-black uppercase border-2 border-black rounded-none text-xs bg-red-600 text-white hover:bg-red-700"
+                >
+                  [END CALL]
                 </button>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Incoming Call Modal */}
-            {callStatus === "incoming" && (
-              <div className="absolute top-10 left-1/2 transform -translate-x-1/2 bg-white border-4 border-black p-6 rounded-none z-50">
-                <div className="text-center mb-6">
-                  <div className="w-16 h-16 bg-blue-600 border-2 border-black mx-auto flex items-center justify-center mb-4 text-white font-black text-sm">
-                    [CALL]
-                  </div>
-                  <h3 className="text-xl font-black uppercase tracking-widest text-black">Incoming Call</h3>
-                  <p className="text-black font-bold text-sm uppercase">FROM: {remoteUserId}</p>
-                </div>
-                <div className="flex gap-4">
-                  <button
-                    onClick={acceptCall}
-                    className="flex-1 bg-green-500 hover:bg-green-600 border-2 border-black py-3 px-6 rounded-none font-black text-black uppercase"
-                  >
-                    [ACCEPT]
-                  </button>
-                  <button
-                    onClick={declineCall}
-                    className="flex-1 bg-red-600 hover:bg-red-700 border-2 border-black py-3 px-6 rounded-none font-black text-white uppercase"
-                  >
-                    [DECLINE]
-                  </button>
-                </div>
+          {/* Recording Download Popup */}
+          {downloadLink && (
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white border-4 border-black p-4 rounded-none flex items-center gap-4 z-50">
+              <div className="bg-green-200 border-2 border-black font-black p-2 rounded-none text-xs">
+                [SAVED]
               </div>
-            )}
-          </div>
-
-          {/* RIGHT PANEL: Nearby Users */}
-          <div className="w-56 bg-[#FF4500] border-[6px] border-black rounded-none p-4 flex flex-col shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] z-10">
-            <h3 className="font-black text-white mb-4 text-xl tracking-tighter uppercase flex items-center gap-2 border-b-[4px] border-black pb-2">
-              <span className="w-4 h-4 bg-[#32CD32] border-[4px] border-black inline-block"></span>
-              Nearby Players
-            </h3>
-            {nearbyUsers.size === 0 && (
-              <div className="flex-1 flex flex-col items-center justify-center text-center p-4 bg-white border-[4px] border-black mt-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                <div className="w-12 h-12 border-[4px] border-black rounded-none mb-2 bg-[#FFD700] flex items-center justify-center font-black text-2xl">?</div>
-                <p className="text-xl font-black uppercase text-black tracking-tighter">NOBODY HERE</p>
-              </div>
-            )}
-
-            <div className="space-y-4 overflow-y-auto mt-2">
-              {Array.from(nearbyUsers).map((userId) => (
-                <div
-                  key={userId}
-                  className="bg-white border-[4px] border-black p-3 rounded-none flex flex-col gap-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+              <div>
+                <p className="text-sm font-black uppercase">Recording Saved</p>
+                <a
+                  href={downloadLink}
+                  download="recording.webm"
+                  className="text-xs text-blue-700 font-bold hover:underline uppercase"
                 >
-                  <div className="flex justify-between items-center border-b-[4px] border-black pb-2">
-                    <span className="font-black text-black text-lg uppercase truncate">{userId}</span>
-                    {userCallStatus.get(userId) && (
-                      <span className="text-xs uppercase font-black bg-[#FFD700] text-black px-2 py-1 border-[4px] border-black">
-                        BUSY
-                      </span>
-                    )}
-                  </div>
+                  Download File
+                </a>
+              </div>
+              <button
+                onClick={() => setDownloadLink(null)}
+                className="font-black text-black ml-4 hover:bg-gray-200 p-1 border-2 border-transparent hover:border-black rounded-none"
+              >
+                ✕
+              </button>
+            </div>
+          )}
 
-                  <div className="flex flex-col gap-2">
-                    {/* Call Button */}
+          {/* Incoming Call Modal */}
+          {callStatus === "incoming" && (
+            <div className="absolute top-10 left-1/2 transform -translate-x-1/2 bg-white border-4 border-black p-6 rounded-none z-50">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-blue-600 border-2 border-black mx-auto flex items-center justify-center mb-4 text-white font-black text-sm">
+                  [CALL]
+                </div>
+                <h3 className="text-xl font-black uppercase tracking-widest text-black">
+                  Incoming Call
+                </h3>
+                <p className="text-black font-bold text-sm uppercase">
+                  FROM: {remoteUserId}
+                </p>
+              </div>
+              <div className="flex gap-4">
+                <button
+                  onClick={acceptCall}
+                  className="flex-1 bg-green-500 hover:bg-green-600 border-2 border-black py-3 px-6 rounded-none font-black text-black uppercase"
+                >
+                  [ACCEPT]
+                </button>
+                <button
+                  onClick={declineCall}
+                  className="flex-1 bg-red-600 hover:bg-red-700 border-2 border-black py-3 px-6 rounded-none font-black text-white uppercase"
+                >
+                  [DECLINE]
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT PANEL: Nearby Users */}
+        <div className="w-56 bg-[#FF4500] border-[6px] border-black rounded-none p-4 flex flex-col shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] z-10">
+          <h3 className="font-black text-white mb-4 text-xl tracking-tighter uppercase flex items-center gap-2 border-b-[4px] border-black pb-2">
+            <span className="w-4 h-4 bg-[#32CD32] border-[4px] border-black inline-block"></span>
+            Nearby Players
+          </h3>
+          {nearbyUsers.size === 0 && (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-4 bg-white border-[4px] border-black mt-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <div className="w-12 h-12 border-[4px] border-black rounded-none mb-2 bg-[#FFD700] flex items-center justify-center font-black text-2xl">
+                ?
+              </div>
+              <p className="text-xl font-black uppercase text-black tracking-tighter">
+                NOBODY HERE
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-4 overflow-y-auto mt-2">
+            {Array.from(nearbyUsers).map((userId) => (
+              <div
+                key={userId}
+                className="bg-white border-[4px] border-black p-3 rounded-none flex flex-col gap-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+              >
+                <div className="flex justify-between items-center border-b-[4px] border-black pb-2">
+                  <span className="font-black text-black text-lg uppercase truncate">
+                    {userId}
+                  </span>
+                  {userCallStatus.get(userId) && (
+                    <span className="text-xs uppercase font-black bg-[#FFD700] text-black px-2 py-1 border-[4px] border-black">
+                      BUSY
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  {/* Call Button */}
+                  <button
+                    onClick={() => handleCallUser(userId)}
+                    disabled={
+                      callStatus !== "idle" || !!userCallStatus.get(userId)
+                    }
+                    className={`w-full py-2 rounded-none text-sm font-black uppercase border-[4px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${
+                      callStatus !== "idle"
+                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        : "bg-[#32CD32] text-black hover:bg-black hover:text-white"
+                    }`}
+                  >
+                    [CALL]
+                  </button>
+
+                  <div className="flex gap-2">
+                    {/* Chat Button */}
                     <button
-                      onClick={() => handleCallUser(userId)}
-                      disabled={
-                        callStatus !== "idle" || !!userCallStatus.get(userId)
-                      }
-                      className={`w-full py-2 rounded-none text-sm font-black uppercase border-[4px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${
-                        callStatus !== "idle"
-                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                          : "bg-[#32CD32] text-black hover:bg-black hover:text-white"
-                      }`}
+                      onClick={() => setActiveChatUser(userId)}
+                      className="flex-1 bg-[#1E90FF] hover:bg-black hover:text-white text-black border-[4px] border-black px-2 py-2 rounded-none text-sm font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                     >
-                      [CALL]
+                      [MSG]
                     </button>
 
-                    <div className="flex gap-2">
-                      {/* Chat Button */}
-                      <button
-                        onClick={() => setActiveChatUser(userId)}
-                        className="flex-1 bg-[#1E90FF] hover:bg-black hover:text-white text-black border-[4px] border-black px-2 py-2 rounded-none text-sm font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
-                      >
-                        [MSG]
-                      </button>
-
-                      {/* Block Button */}
-                      <button
-                        onClick={() => toggleBlockUser(userId)}
-                        className={`flex-1 px-2 py-2 rounded-none text-sm font-black uppercase border-[4px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${blockedUsers.has(userId) ? "bg-black text-white" : "bg-white text-black hover:bg-[#FF4500]"}`}
-                      >
-                        [BLK]
-                      </button>
-                    </div>
+                    {/* Block Button */}
+                    <button
+                      onClick={() => toggleBlockUser(userId)}
+                      className={`flex-1 px-2 py-2 rounded-none text-sm font-black uppercase border-[4px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${blockedUsers.has(userId) ? "bg-black text-white" : "bg-white text-black hover:bg-[#FF4500]"}`}
+                    >
+                      [BLK]
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
+    </div>
   );
 };

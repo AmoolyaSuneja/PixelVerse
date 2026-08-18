@@ -118,7 +118,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error(signupData.message || "Signup failed");
       }
 
-      await login(username, password);
+      // The server returns a session token with the newly created account. This
+      // avoids a second request (and another cold-start wait in deployment).
+      sessionStorage.setItem("token", signupData.token);
+      const decoded = parseJwt(signupData.token) as {
+        userId: string;
+        role: "User" | "Admin";
+      };
+      setUser({ id: decoded.userId, role: decoded.role });
+      setToken(signupData.token);
     } catch (error) {
       console.error("Signup error:", error);
       throw error;

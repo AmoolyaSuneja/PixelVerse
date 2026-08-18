@@ -1,8 +1,14 @@
 const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient({ 
-  datasources: { 
-    db: { url: "mongodb+srv://Amoolya:Milo1008@vaultx.3lehwtw.mongodb.net/PixelVerse?appName=VaultX" } 
-  } 
+require('dotenv').config();
+
+if (!process.env.MONGO_URL) {
+  throw new Error('MONGO_URL must be set before running the seed script.');
+}
+
+const prisma = new PrismaClient({
+  datasources: {
+    db: { url: process.env.MONGO_URL },
+  },
 });
 
 async function main() {

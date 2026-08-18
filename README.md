@@ -1,141 +1,82 @@
-# Pixelverse: 2D Metaverse with Real-Time Video and Chat Analysis
+# Pixelverse
 
-Welcome to **Pixelverse**, a dynamic 2D metaverse platform that brings people together through real-time communication, interactive spaces, and immersive virtual experiences. Whether you're chatting globally, engaging in private conversations, or connecting via video calls, Pixelverse offers a seamless and secure environment for multiplayer interaction. Built with a Turborepo monorepo structure, it integrates an HTTP server, WebSocket server, frontend client, and database.
+Pixelverse is a multiplayer 2D social arena. Players create a space, select an
+avatar, move together in real time, chat, and start one-to-one video calls when
+they are nearby.
 
----
+## Features
 
-## 📽️ Walkthrough
+- JWT-based sign-up and sign-in
+- Avatar selection and immediate procedural fallback while avatar data loads
+- Shared arenas with real-time movement over WebSockets
+- Global chat, proximity private chat, blocking, and chat moderation
+- One-to-one WebRTC video, audio, screen sharing, and local recording
+- Space creation and management
 
-[walkthrough](https://github.com/user-attachments/assets/a9608006-a9ba-4eb3-bc72-df4bd6352522)
-
----
-
-## 🚀 Features
-
-### 🔐 User Authentication
-
-- Register and log in securely to access the platform.
-- Choose a custom avatar to represent yourself in the metaverse.
-
-### 🧱 Space Creation & Joining
-
-- Create your own virtual space with a unique **Space ID**.
-- Share the Space ID with others so they can join your space.
-- Join existing spaces by entering a valid Space ID.
-
-### 🕹️ Real-Time Multiplayer Movement
-
-- Move your avatar freely in a shared 2D environment using arrow keys.
-- See other users' movements in real time, powered by WebSockets.
-
-### 💬 Chat System
-
-#### Global Chat
-
-- Chat with everyone in the space through a shared group chat.
-
-#### Private Proximity Chat
-
-- Send private messages to users within **2 pixels** of your avatar.
-- Encourages natural, location-based conversations.
-
-#### Blocking Mechanism
-
-- Block unwanted users in private chats to stop communication from them.
-
-### 📹 Video Chat
-
-- Start a **proximity-based video call** with another user when your avatars are close.
-- Enjoy real-time video and audio powered by **WebRTC** for smooth peer-to-peer connections.
-- Perfect for one-on-one interactions within the space.
-
-### 🛡️ Real-Time Chat Moderation
-
-- A **bad words filter** detects offensive language in chats.
-- **Warning System**:
-  - First and second offenses trigger a warning message.
-  - Third offense results in automatic removal from the space.
-- **Banning Mechanism**:
-  - Banned users can’t rejoin unless the space creator unbans them.
-
----
-
-## 🧰 Tech Stack
-
-- **Monorepo**: Turborepo
-- **Frontend**: React, Tailwind CSS
-- **Backend**:
-  - HTTP Server: Express, Zod (for validation)
-  - WebSocket Server: WS
-- **Database**: MongoDB
-- **Authentication**: JWT (JSON Web Tokens)
-- **Video Chat**: WebRTC
-
----
-
-## 📁 Project Structure
+## Project layout
 
 ```
-Pixelverse/
-├── apps/
-│   ├── http/       # HTTP server for authentication and space management
-│   ├── ws/         # WebSocket server for real-time movement, chat, and video
-│   └── frontend/   # Client-side UI built with React
-├── packages/
-│   └── db/         # Database models and setup
-├── .gitignore
-├── package.json
-├── turbo.json
-└── README.md
+apps/
+  fe/          React + Vite frontend
+  http/        Express API for auth, spaces, and avatar metadata
+  websocket/   WebSocket server for arena events and WebRTC signalling
+packages/
+  db/          Prisma and MongoDB schema
 ```
 
----
+## Requirements
 
-## 📚 How to Use
+- Node.js 18+
+- MongoDB
+- A configured JWT secret
+- For reliable video calls across different networks: a TURN server
 
-1. **Register and Log In**: Sign up, log in, and pick an avatar to get started.
-2. **Create or Join a Space**: Create a new space or join one using a Space ID.
-3. **Move Around**: Use arrow keys (↑↓←→) to navigate your avatar in the 2D world.
-4. **Chat Globally**: Send messages to everyone in the space via the global chat.
-5. **Chat Privately**: When near another user (within 2 pixels), send a private message.
-6. **Start a Video Call**: When close to another user, initiate a video call for face-to-face interaction.
-7. **Block Users**: Block someone to stop private chats with them.
-8. **Stay Respectful**: Avoid offensive language—three strikes, and you’re out of the space!
+## Configuration
 
----
+Create a root `.env` from `.env.example`:
 
-## 🛠️ Setup Instructions
+```env
+MONGO_URL=mongodb+srv://...
+JWT_SECRET=replace_with_a_long_random_secret
+PORT=8080
+```
 
-1. **Clone the Repository**:
+Create `apps/fe/.env.local` from `apps/fe/.env.example`:
 
-   ```bash
-   git clone https://github.com/xKrishnaSaxena/Pixelverse.git
-   ```
+```env
+VITE_BACKEND_URL=http://localhost:8080
+VITE_WS_URL=ws://localhost:8081
 
-2. **Setup Environment Variables**
+# Recommended for deployed video calls where direct peer connections are blocked.
+VITE_TURN_URL=turn:turn.example.com:3478
+VITE_TURN_USERNAME=turn_username
+VITE_TURN_CREDENTIAL=turn_credential
+```
 
-   - Create a `.env` file in the root directory of the project.
-   - Add the following variables:
-     - `MONGODB_URI`: Your MongoDB URI.
-     - `JWT_SECRET`: A secret key for JWT authentication.
-     - `PORT`: The port number for the HTTP server.
+TURN credentials are exposed to the browser by design, so use time-limited
+credentials from your TURN provider rather than a long-lived admin password.
 
-3. **Install Dependencies**:
+## Run locally
 
-   ```bash
-   cd Pixelverse
-   npm install
-   ```
+```bash
+npm install
+npm run db:generate
+npm run dev
+```
 
-4. **Run the Application**:
+The frontend runs on Vite's printed URL (normally `http://localhost:5173`).
+The API defaults to port 8080 and the WebSocket service to port 8081.
 
-   ```bash
-   npm run dev
-   ```
+## Video call notes
 
-5. **Access Pixelverse**:
-   - Open your browser and go to `http://localhost:5173`.
+Calls use WebRTC. The WebSocket service only relays offer, answer, and ICE
+messages; audio/video streams go directly between browsers or through TURN.
+Camera and microphone permission is required. HTTPS is required for camera
+access outside of localhost.
 
----
+## Build checks
 
-**Pixelverse** is your gateway to a fun, interactive 2D metaverse. Explore, chat, and connect with others in real time—jump in and enjoy!
+```bash
+npm run check-types
+npm run build
+```
