@@ -961,8 +961,7 @@ export const Arena = () => {
         const otherState = userAnimState.current.get(id) || { moving: false, walkCycle: 0, direction: 'down' };
 
         drawProceduralCharacter(ctx, visual.visualX, visual.visualY, avatarStr, AVATAR_SIZE, otherState.walkCycle, otherState.direction);
-          ctx.restore();
-        }
+
         if (hoveredUser === id) {
           ctx.strokeStyle = "#00ffd5";
           ctx.lineWidth = 2;
