@@ -226,6 +226,45 @@ export class User {
               this.spaceId!,
             );
 
+            // Send every connected browser an authoritative roster as well as
+            // the incremental event. This prevents a transient reconnect from
+            // leaving an otherwise connected player invisible.
+            roomManager.rooms.get(spaceId)?.forEach((member) => {
+              member.send({
+                type: "room-state",
+                payload: {
+                  users:
+                    roomManager.rooms
+                      .get(spaceId)
+                      ?.filter((user) => user.id !== member.id)
+                      .map((user) => ({
+                        id: user.id,
+                        userId: user.userId,
+                        x: user.x,
+                        y: user.y,
+                      })) ?? [],
+                },
+              });
+            });
+
+            break;
+          }
+
+          case "room-state-request": {
+            if (!this.spaceId) break;
+
+            const users =
+              RoomManager.getInstance()
+                .rooms.get(this.spaceId)
+                ?.filter((user) => user.id !== this.id)
+                .map((user) => ({
+                  id: user.id,
+                  userId: user.userId,
+                  x: user.x,
+                  y: user.y,
+                })) ?? [];
+
+            this.send({ type: "room-state", payload: { users } });
             break;
           }
 

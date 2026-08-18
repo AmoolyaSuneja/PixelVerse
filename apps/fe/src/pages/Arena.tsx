@@ -585,12 +585,26 @@ export const Arena = () => {
       wsRef.current!.send(
         JSON.stringify({ type: "join", payload: { spaceId, token } }),
       );
+      wsRef.current!.send(JSON.stringify({ type: "room-state-request" }));
     };
     wsRef.current.onmessage = (event) => {
       const message = JSON.parse(event.data);
       handleWebSocketMessageRef.current(message);
     };
-    return () => wsRef.current?.close();
+
+    // Reconcile the room regularly. WebSocket join notifications are transient,
+    // so this keeps another player visible even if one was missed while a
+    // browser reconnected.
+    const roomSync = window.setInterval(() => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: "room-state-request" }));
+      }
+    }, 5000);
+
+    return () => {
+      window.clearInterval(roomSync);
+      wsRef.current?.close();
+    };
   }, [isLoading, token, spaceId]);
 
   const handleWebSocketMessage = useCallback(
@@ -671,6 +685,34 @@ export const Arena = () => {
               timestamp: Date.now(),
             },
           ]);
+          break;
+        case "room-state":
+          setUsers(() => {
+            const userMap = new Map<string, any>();
+            message.payload.users.forEach((user: any) => {
+              userMap.set(user.id, {
+                id: user.id,
+                userId: user.userId,
+                gridX: user.x,
+                gridY: user.y,
+              });
+              if (!usersAnimationRef.current.has(user.id)) {
+                usersAnimationRef.current.set(user.id, {
+                  isMoving: false,
+                  visualX: user.x * 50,
+                  visualY: user.y * 50,
+                });
+              }
+              if (!userAnimState.current.has(user.id)) {
+                userAnimState.current.set(user.id, {
+                  moving: false,
+                  walkCycle: 0,
+                  direction: "down",
+                });
+              }
+            });
+            return userMap;
+          });
           break;
         case "chat-message":
           if (!message.payload.isGlobal) {
