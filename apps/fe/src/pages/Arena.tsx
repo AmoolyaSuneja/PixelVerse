@@ -1050,19 +1050,19 @@ export const Arena = () => {
       autoFocus
       data-lenis-prevent
     >
+      <button
+        onClick={() => {
+          if (wsRef.current) wsRef.current.close();
+          navigate(-1);
+        }}
+        className="fixed top-6 left-6 z-50 w-12 h-12 bg-white border-[4px] border-black flex items-center justify-center font-black text-2xl hover:bg-black hover:text-white transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+        title="Go Back"
+      >
+        ↩
+      </button>
       <div className="relative w-full h-full flex flex-col z-10 p-4 gap-4">
-        <div className="flex justify-between items-center bg-[#FFD700] border-[6px] border-black p-4 rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+        <div className="flex justify-between items-center bg-[#FFD700] border-[6px] border-black p-4 rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] pl-24">
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => {
-                if (wsRef.current) wsRef.current.close();
-                navigate(-1);
-              }}
-              className="w-12 h-12 bg-white border-[4px] border-black flex items-center justify-center font-black text-2xl hover:bg-black hover:text-white transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
-              title="Go Back"
-            >
-              ↩
-            </button>
             <h1 className="text-4xl font-black text-black uppercase tracking-tighter">
               Pixel Arena
             </h1>

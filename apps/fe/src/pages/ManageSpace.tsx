@@ -125,18 +125,18 @@ export default function ManageSpace() {
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] py-12 px-4 font-sans relative overflow-hidden">
+      <button
+        onClick={() => navigate(-1)}
+        className="fixed top-6 left-6 w-12 h-12 bg-white border-[4px] border-black flex items-center justify-center font-black text-2xl hover:bg-black hover:text-white transition-colors shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] z-50"
+        title="Go Back"
+      >
+        ↩
+      </button>
       <div className="absolute bottom-0 right-0 w-full h-1/3 bg-[#FFD700] border-t-[6px] border-black -z-10"></div>
       
       <div className="max-w-2xl mx-auto relative z-10">
-        <div className="flex gap-4 items-center mb-10 transform -rotate-1">
-          <button
-            onClick={() => navigate(-1)}
-            className="w-12 h-12 bg-white border-[4px] border-black flex items-center justify-center font-black text-2xl hover:bg-black hover:text-white transition-colors shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] z-20 relative"
-            title="Go Back"
-          >
-            ↩
-          </button>
-          <h1 className="text-3xl md:text-4xl font-black text-black uppercase tracking-tighter bg-white border-[4px] border-black inline-block px-4 py-2 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] m-0">
+        <div className="flex gap-4 items-center mb-10 transform -rotate-1 justify-center">
+          <h1 className="text-3xl md:text-4xl font-black text-black uppercase tracking-tighter bg-white border-[4px] border-black inline-block px-4 py-2 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] m-0 text-center">
             MANAGE SPACE:<br/><span className="text-[#1E90FF]">{space?.name}</span>
           </h1>
         </div>

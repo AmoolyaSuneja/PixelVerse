@@ -67,16 +67,16 @@ export default function AvatarSelection() {
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] py-12 px-4 font-sans flex flex-col items-center">
+      <button
+        onClick={() => navigate(-1)}
+        className="fixed top-6 left-6 w-12 h-12 bg-white border-[4px] border-black flex items-center justify-center font-black text-2xl hover:bg-black hover:text-white transition-colors shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] z-50"
+        title="Go Back"
+      >
+        ↩
+      </button>
       <div className="max-w-2xl mx-auto w-full relative">
         <div className="absolute -top-4 -right-4 w-12 h-12 bg-[#FF00FF] border-[4px] border-black -z-10 rotate-45"></div>
         <div className="flex gap-4 items-center justify-center mb-8">
-          <button
-            onClick={() => navigate(-1)}
-            className="w-12 h-12 bg-white border-[4px] border-black flex items-center justify-center font-black text-2xl hover:bg-black hover:text-white transition-colors shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
-            title="Go Back"
-          >
-            ↩
-          </button>
           <h1 className="text-3xl md:text-4xl font-black text-center text-black uppercase border-[4px] border-black bg-[#FFD700] p-3 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] tracking-tighter flex-1">
             CHOOSE AVATAR
           </h1>
